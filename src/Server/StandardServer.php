@@ -14,6 +14,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Throwable;
+
 use function is_array;
 
 /**
@@ -26,7 +27,7 @@ use function is_array;
  *     ]);
  *     $server->handleRequest();
  *
- * Or using [ServerConfig](reference.md#graphqlserverserverconfig) instance:
+ * Or using [ServerConfig](class-reference.md#graphqlserverserverconfig) instance:
  *
  *     $config = GraphQL\Server\ServerConfig::create()
  *         ->setSchema($mySchema)
@@ -77,9 +78,11 @@ class StandardServer
         if (is_array($config)) {
             $config = ServerConfig::create($config);
         }
+
         if (! $config instanceof ServerConfig) {
             throw new InvariantViolation('Expecting valid server config, but got ' . Utils::printSafe($config));
         }
+
         $this->config = $config;
         $this->helper = new Helper();
     }

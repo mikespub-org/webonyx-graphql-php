@@ -20,16 +20,18 @@ use GraphQL\Type\Definition\UnionType;
 use GraphQL\Utils\InterfaceImplementations;
 use GraphQL\Utils\TypeInfo;
 use GraphQL\Utils\Utils;
+use InvalidArgumentException;
 use Traversable;
+
 use function array_map;
-use function array_values;
+use function get_class;
 use function implode;
 use function is_array;
 use function is_callable;
 use function sprintf;
 
 /**
- * Schema Definition (see [related docs](type-system/schema.md))
+ * Schema Definition (see [schema definition docs](schema-definition.md))
  *
  * A Schema is created by supplying the root types of each type of operation:
  * query, mutation (optional) and subscription (optional). A schema definition is
@@ -61,13 +63,6 @@ class Schema
     private $resolvedTypes = [];
 
     /**
-     * Lazily initialized.
-     *
-     * @var array<string, array<string, ObjectType|UnionType>>
-     */
-    private $subTypeMap;
-
-    /**
      * Lazily initialised.
      *
      * @var array<string, InterfaceImplementations>
@@ -84,7 +79,7 @@ class Schema
     /** @var Error[] */
     private $validationErrors;
 
-    /** @var SchemaTypeExtensionNode[] */
+    /** @var array<int, SchemaTypeExtensionNode> */
     public $extensionASTNodes = [];
 
     /**
@@ -137,26 +132,31 @@ class Schema
         if ($config->query !== null) {
             $this->resolvedTypes[$config->query->name] = $config->query;
         }
+
         if ($config->mutation !== null) {
             $this->resolvedTypes[$config->mutation->name] = $config->mutation;
         }
+
         if ($config->subscription !== null) {
             $this->resolvedTypes[$config->subscription->name] = $config->subscription;
         }
+
         if (is_array($this->config->types)) {
             foreach ($this->resolveAdditionalTypes() as $type) {
                 if (isset($this->resolvedTypes[$type->name])) {
                     Utils::invariant(
                         $type === $this->resolvedTypes[$type->name],
                         sprintf(
-                            'Schema must contain unique named types but contains multiple types named "%s" (see http://webonyx.github.io/graphql-php/type-system/#type-registry).',
+                            'Schema must contain unique named types but contains multiple types named "%s" (see https://webonyx.github.io/graphql-php/type-definitions/#type-registry).',
                             $type
                         )
                     );
                 }
+
                 $this->resolvedTypes[$type->name] = $type;
             }
         }
+
         $this->resolvedTypes += Type::getStandardTypes() + Introspection::getTypes();
 
         if ($this->config->typeLoader) {
@@ -167,12 +167,9 @@ class Schema
         $this->getTypeMap();
     }
 
-    /**
-     * @return Generator
-     */
-    private function resolveAdditionalTypes()
+    private function resolveAdditionalTypes(): Generator
     {
-        $types = $this->config->types ?? [];
+        $types = $this->config->types;
 
         if (is_callable($types)) {
             $types = $types();
@@ -194,6 +191,7 @@ class Schema
                     Utils::printSafe($type)
                 ));
             }
+
             yield $type;
         }
     }
@@ -208,7 +206,7 @@ class Schema
      *
      * @api
      */
-    public function getTypeMap() : array
+    public function getTypeMap(): array
     {
         if (! $this->fullyLoaded) {
             $this->resolvedTypes = $this->collectAllTypes();
@@ -227,6 +225,7 @@ class Schema
         foreach ($this->resolvedTypes as $type) {
             $typeMap = TypeInfo::extractTypes($type, $typeMap);
         }
+
         foreach ($this->getDirectives() as $directive) {
             if (! ($directive instanceof Directive)) {
                 continue;
@@ -234,6 +233,7 @@ class Schema
 
             $typeMap = TypeInfo::extractTypesFromDirectives($directive, $typeMap);
         }
+
         // When types are set as array they are resolved in constructor
         if (is_callable($this->config->types)) {
             foreach ($this->resolveAdditionalTypes() as $type) {
@@ -266,10 +266,13 @@ class Schema
         switch ($operation) {
             case 'query':
                 return $this->getQueryType();
+
             case 'mutation':
                 return $this->getMutationType();
+
             case 'subscription':
                 return $this->getSubscriptionType();
+
             default:
                 return null;
         }
@@ -282,7 +285,7 @@ class Schema
      *
      * @api
      */
-    public function getQueryType() : ?Type
+    public function getQueryType(): ?Type
     {
         return $this->config->query;
     }
@@ -294,7 +297,7 @@ class Schema
      *
      * @api
      */
-    public function getMutationType() : ?Type
+    public function getMutationType(): ?Type
     {
         return $this->config->mutation;
     }
@@ -306,7 +309,7 @@ class Schema
      *
      * @api
      */
-    public function getSubscriptionType() : ?Type
+    public function getSubscriptionType(): ?Type
     {
         return $this->config->subscription;
     }
@@ -326,7 +329,7 @@ class Schema
      *
      * @api
      */
-    public function getType(string $name) : ?Type
+    public function getType(string $name): ?Type
     {
         if (! isset($this->resolvedTypes[$name])) {
             $type = $this->loadType($name);
@@ -334,18 +337,19 @@ class Schema
             if (! $type) {
                 return null;
             }
+
             $this->resolvedTypes[$name] = self::resolveType($type);
         }
 
         return $this->resolvedTypes[$name];
     }
 
-    public function hasType(string $name) : bool
+    public function hasType(string $name): bool
     {
         return $this->getType($name) !== null;
     }
 
-    private function loadType(string $typeName) : ?Type
+    private function loadType(string $typeName): ?Type
     {
         $typeLoader = $this->config->typeLoader;
 
@@ -392,7 +396,7 @@ class Schema
         );
     }
 
-    private function defaultTypeLoader(string $typeName) : ?Type
+    private function defaultTypeLoader(string $typeName): ?Type
     {
         // Default type loader simply falls back to collecting all types
         $typeMap = $this->getTypeMap();
@@ -401,11 +405,16 @@ class Schema
     }
 
     /**
-     * @param Type|callable():Type $type
+     * @param Type|callable $type
+     *
+     * @template T of Type
+     * @phpstan-param T|callable():T $type
+     * @phpstan-return T
      */
-    public static function resolveType($type) : Type
+    public static function resolveType($type): Type
     {
         if ($type instanceof Type) {
+            /** @phpstan-var T $type */
             return $type;
         }
 
@@ -424,7 +433,7 @@ class Schema
      *
      * @api
      */
-    public function getPossibleTypes(Type $abstractType) : array
+    public function getPossibleTypes(Type $abstractType): array
     {
         return $abstractType instanceof UnionType
             ? $abstractType->getTypes()
@@ -438,7 +447,7 @@ class Schema
      *
      * @api
      */
-    public function getImplementations(InterfaceType $abstractType) : InterfaceImplementations
+    public function getImplementations(InterfaceType $abstractType): InterfaceImplementations
     {
         return $this->collectImplementations()[$abstractType->name];
     }
@@ -446,7 +455,7 @@ class Schema
     /**
      * @return array<string, InterfaceImplementations>
      */
-    private function collectImplementations() : array
+    private function collectImplementations(): array
     {
         if (! isset($this->implementationsMap)) {
             /** @var array<string, array<string, Type>> $foundImplementations */
@@ -461,6 +470,7 @@ class Schema
                         if (! isset($foundImplementations[$iface->name])) {
                             $foundImplementations[$iface->name] = ['objects' => [], 'interfaces' => []];
                         }
+
                         $foundImplementations[$iface->name]['interfaces'][] = $type;
                     }
                 } elseif ($type instanceof ObjectType) {
@@ -468,12 +478,14 @@ class Schema
                         if (! isset($foundImplementations[$iface->name])) {
                             $foundImplementations[$iface->name] = ['objects' => [], 'interfaces' => []];
                         }
+
                         $foundImplementations[$iface->name]['objects'][] = $type;
                     }
                 }
             }
+
             $this->implementationsMap = array_map(
-                static function (array $implementations) : InterfaceImplementations {
+                static function (array $implementations): InterfaceImplementations {
                     return new InterfaceImplementations($implementations['objects'], $implementations['interfaces']);
                 },
                 $foundImplementations
@@ -492,7 +504,7 @@ class Schema
      * @api
      * @codeCoverageIgnore
      */
-    public function isPossibleType(AbstractType $abstractType, ObjectType $possibleType) : bool
+    public function isPossibleType(AbstractType $abstractType, ObjectType $possibleType): bool
     {
         return $this->isSubType($abstractType, $possibleType);
     }
@@ -505,27 +517,17 @@ class Schema
      *
      * @api
      */
-    public function isSubType(AbstractType $abstractType, ImplementingType $maybeSubType) : bool
+    public function isSubType(AbstractType $abstractType, ImplementingType $maybeSubType): bool
     {
-        if (! isset($this->subTypeMap[$abstractType->name])) {
-            $this->subTypeMap[$abstractType->name] = [];
-
-            if ($abstractType instanceof UnionType) {
-                foreach ($abstractType->getTypes() as $type) {
-                    $this->subTypeMap[$abstractType->name][$type->name] = true;
-                }
-            } else {
-                $implementations = $this->getImplementations($abstractType);
-                foreach ($implementations->objects() as $type) {
-                    $this->subTypeMap[$abstractType->name][$type->name] = true;
-                }
-                foreach ($implementations->interfaces() as $type) {
-                    $this->subTypeMap[$abstractType->name][$type->name] = true;
-                }
-            }
+        if ($abstractType instanceof InterfaceType) {
+            return $maybeSubType->implementsInterface($abstractType);
         }
 
-        return isset($this->subTypeMap[$abstractType->name][$maybeSubType->name]);
+        if ($abstractType instanceof UnionType) {
+            return $abstractType->isPossibleType($maybeSubType);
+        }
+
+        throw new InvalidArgumentException(sprintf('$abstractType must be of type UnionType|InterfaceType got: %s.', get_class($abstractType)));
     }
 
     /**
@@ -533,7 +535,7 @@ class Schema
      *
      * @api
      */
-    public function getDirective(string $name) : ?Directive
+    public function getDirective(string $name): ?Directive
     {
         foreach ($this->getDirectives() as $directive) {
             if ($directive->name === $name) {
@@ -544,7 +546,7 @@ class Schema
         return null;
     }
 
-    public function getAstNode() : ?SchemaDefinitionNode
+    public function getAstNode(): ?SchemaDefinitionNode
     {
         return $this->config->getAstNode();
     }
@@ -604,6 +606,7 @@ class Schema
         if ($this->validationErrors !== null) {
             return $this->validationErrors;
         }
+
         // Validate the schema, producing a list of errors.
         $context = new SchemaValidationContext($this);
         $context->validateRootTypes();

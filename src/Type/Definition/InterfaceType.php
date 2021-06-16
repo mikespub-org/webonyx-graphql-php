@@ -9,26 +9,20 @@ use GraphQL\Language\AST\InterfaceTypeDefinitionNode;
 use GraphQL\Language\AST\InterfaceTypeExtensionNode;
 use GraphQL\Type\Schema;
 use GraphQL\Utils\Utils;
+
 use function array_map;
 use function is_array;
 use function is_callable;
 use function is_string;
 use function sprintf;
 
-class InterfaceType extends Type implements AbstractType, OutputType, CompositeType, NullableType, NamedType, ImplementingType
+class InterfaceType extends TypeWithFields implements AbstractType, OutputType, CompositeType, NullableType, NamedType, ImplementingType
 {
     /** @var InterfaceTypeDefinitionNode|null */
     public $astNode;
 
     /** @var array<int, InterfaceTypeExtensionNode> */
     public $extensionASTNodes;
-
-    /**
-     * Lazily initialized.
-     *
-     * @var array<string, FieldDefinition>
-     */
-    private $fields;
 
     /**
      * Lazily initialized.
@@ -58,7 +52,7 @@ class InterfaceType extends Type implements AbstractType, OutputType, CompositeT
         $this->name              = $config['name'];
         $this->description       = $config['description'] ?? null;
         $this->astNode           = $config['astNode'] ?? null;
-        $this->extensionASTNodes = $config['extensionASTNodes'] ?? null;
+        $this->extensionASTNodes = $config['extensionASTNodes'] ?? [];
         $this->config            = $config;
     }
 
@@ -69,7 +63,7 @@ class InterfaceType extends Type implements AbstractType, OutputType, CompositeT
      *
      * @throws InvariantViolation
      */
-    public static function assertInterfaceType($type) : self
+    public static function assertInterfaceType($type): self
     {
         Utils::invariant(
             $type instanceof self,
@@ -79,44 +73,7 @@ class InterfaceType extends Type implements AbstractType, OutputType, CompositeT
         return $type;
     }
 
-    public function getField(string $name) : FieldDefinition
-    {
-        if (! isset($this->fields)) {
-            $this->initializeFields();
-        }
-        Utils::invariant(isset($this->fields[$name]), 'Field "%s" is not defined for type "%s"', $name, $this->name);
-
-        return $this->fields[$name];
-    }
-
-    public function hasField(string $name) : bool
-    {
-        if (! isset($this->fields)) {
-            $this->initializeFields();
-        }
-
-        return isset($this->fields[$name]);
-    }
-
-    /**
-     * @return FieldDefinition[]
-     */
-    public function getFields() : array
-    {
-        if (! isset($this->fields)) {
-            $this->initializeFields();
-        }
-
-        return $this->fields;
-    }
-
-    protected function initializeFields() : void
-    {
-        $fields       = $this->config['fields'] ?? [];
-        $this->fields = FieldDefinition::defineFieldMap($this, $fields);
-    }
-
-    public function implementsInterface(InterfaceType $interfaceType) : bool
+    public function implementsInterface(InterfaceType $interfaceType): bool
     {
         if (! isset($this->interfaceMap)) {
             $this->interfaceMap = [];
@@ -133,7 +90,7 @@ class InterfaceType extends Type implements AbstractType, OutputType, CompositeT
     /**
      * @return array<int, InterfaceType>
      */
-    public function getInterfaces() : array
+    public function getInterfaces(): array
     {
         if (! isset($this->interfaces)) {
             $interfaces = $this->config['interfaces'] ?? [];
@@ -180,7 +137,7 @@ class InterfaceType extends Type implements AbstractType, OutputType, CompositeT
     /**
      * @throws InvariantViolation
      */
-    public function assertValid() : void
+    public function assertValid(): void
     {
         parent::assertValid();
 
