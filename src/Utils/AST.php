@@ -42,9 +42,7 @@ use stdClass;
 use Throwable;
 use Traversable;
 
-use function array_combine;
 use function array_key_exists;
-use function array_map;
 use function count;
 use function is_array;
 use function is_bool;
@@ -52,7 +50,6 @@ use function is_float;
 use function is_int;
 use function is_object;
 use function is_string;
-use function iterator_to_array;
 use function property_exists;
 
 /**
@@ -177,7 +174,7 @@ class AST
                 $valuesNodes = [];
                 foreach ($value as $item) {
                     $itemNode = self::astFromValue($item, $itemType);
-                    if (! $itemNode) {
+                    if ($itemNode === null) {
                         continue;
                     }
 
@@ -226,7 +223,7 @@ class AST
 
                 $fieldNode = self::astFromValue($fieldValue, $field->getType());
 
-                if (! $fieldNode) {
+                if ($fieldNode === null) {
                     continue;
                 }
 
@@ -242,15 +239,7 @@ class AST
         if ($type instanceof ScalarType || $type instanceof EnumType) {
             // Since value is an internally represented value, it must be serialized
             // to an externally represented value before converting into an AST.
-            try {
-                $serialized = $type->serialize($value);
-            } catch (Throwable $error) {
-                if ($error instanceof Error && $type instanceof EnumType) {
-                    return null;
-                }
-
-                throw $error;
-            }
+            $serialized = $type->serialize($value);
 
             // Others serialize based on their corresponding PHP scalar types.
             if (is_bool($serialized)) {
@@ -349,7 +338,7 @@ class AST
         if ($valueNode instanceof VariableNode) {
             $variableName = $valueNode->name->value;
 
-            if (! $variables || ! array_key_exists($variableName, $variables)) {
+            if (($variables ?? []) === [] || ! array_key_exists($variableName, $variables)) {
                 // No valid return value.
                 return $undefined;
             }
@@ -457,7 +446,7 @@ class AST
             }
 
             $enumValue = $type->getValue($valueNode->value);
-            if (! $enumValue) {
+            if ($enumValue === null) {
                 return $undefined;
             }
 
@@ -536,33 +525,25 @@ class AST
                 return $valueNode->value;
 
             case $valueNode instanceof ListValueNode:
-                return array_map(
-                    static function ($node) use ($variables) {
-                        return self::valueFromASTUntyped($node, $variables);
-                    },
-                    iterator_to_array($valueNode->values)
-                );
+                $values = [];
+                foreach ($valueNode->values as $node) {
+                    $values[] = self::valueFromASTUntyped($node, $variables);
+                }
+
+                return $values;
 
             case $valueNode instanceof ObjectValueNode:
-                return array_combine(
-                    array_map(
-                        static function ($field): string {
-                            return $field->name->value;
-                        },
-                        iterator_to_array($valueNode->fields)
-                    ),
-                    array_map(
-                        static function ($field) use ($variables) {
-                            return self::valueFromASTUntyped($field->value, $variables);
-                        },
-                        iterator_to_array($valueNode->fields)
-                    )
-                );
+                $values = [];
+                foreach ($valueNode->fields as $field) {
+                    $values[$field->name->value] = self::valueFromASTUntyped($field->value, $variables);
+                }
+
+                return $values;
 
             case $valueNode instanceof VariableNode:
                 $variableName = $valueNode->name->value;
 
-                return $variables && isset($variables[$variableName])
+                return ($variables ?? []) !== [] && isset($variables[$variableName])
                     ? $variables[$variableName]
                     : null;
         }
@@ -586,13 +567,13 @@ class AST
         if ($inputTypeNode instanceof ListTypeNode) {
             $innerType = self::typeFromAST($schema, $inputTypeNode->type);
 
-            return $innerType ? new ListOfType($innerType) : null;
+            return $innerType === null ? null : new ListOfType($innerType);
         }
 
         if ($inputTypeNode instanceof NonNullTypeNode) {
             $innerType = self::typeFromAST($schema, $inputTypeNode->type);
 
-            return $innerType ? new NonNull($innerType) : null;
+            return $innerType === null ? null : new NonNull($innerType);
         }
 
         if ($inputTypeNode instanceof NamedTypeNode) {
@@ -600,34 +581,6 @@ class AST
         }
 
         throw new Error('Unexpected type kind: ' . $inputTypeNode->kind . '.');
-    }
-
-    /**
-     * @deprecated use getOperationAST instead.
-     *
-     * Returns operation type ("query", "mutation" or "subscription") given a document and operation name
-     *
-     * @param string $operationName
-     *
-     * @return bool|string
-     *
-     * @api
-     */
-    public static function getOperation(DocumentNode $document, $operationName = null)
-    {
-        if ($document->definitions) {
-            foreach ($document->definitions as $def) {
-                if (! ($def instanceof OperationDefinitionNode)) {
-                    continue;
-                }
-
-                if (! $operationName || (isset($def->name->value) && $def->name->value === $operationName)) {
-                    return $def->operation;
-                }
-            }
-        }
-
-        return false;
     }
 
     /**

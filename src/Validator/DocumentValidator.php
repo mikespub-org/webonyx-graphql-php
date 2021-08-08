@@ -8,7 +8,6 @@ use Exception;
 use GraphQL\Error\Error;
 use GraphQL\Language\AST\DocumentNode;
 use GraphQL\Language\Visitor;
-use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
 use GraphQL\Utils\TypeInfo;
 use GraphQL\Validator\Rules\DisableIntrospection;
@@ -284,29 +283,6 @@ class DocumentValidator
         }
 
         return $arr;
-    }
-
-    /**
-     * Utility which determines if a value literal node is valid for an input type.
-     *
-     * Deprecated. Rely on validation for documents co
-     * ntaining literal values.
-     *
-     * @deprecated
-     *
-     * @return Error[]
-     */
-    public static function isValidLiteralValue(Type $type, $valueNode)
-    {
-        $emptySchema = new Schema([]);
-        $emptyDoc    = new DocumentNode(['definitions' => []]);
-        $typeInfo    = new TypeInfo($emptySchema, $type);
-        $context     = new ValidationContext($emptySchema, $emptyDoc, $typeInfo);
-        $validator   = new ValuesOfCorrectType();
-        $visitor     = $validator->getVisitor($context);
-        Visitor::visit($valueNode, Visitor::visitWithTypeInfo($typeInfo, $visitor));
-
-        return $context->getErrors();
     }
 
     /**

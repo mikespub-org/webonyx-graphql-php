@@ -162,28 +162,6 @@ class Utils
      *
      * @throws Exception
      */
-    public static function map($iterable, callable $fn): array
-    {
-        self::invariant(
-            is_array($iterable) || $iterable instanceof Traversable,
-            __METHOD__ . ' expects array or Traversable'
-        );
-
-        $map = [];
-        foreach ($iterable as $key => $value) {
-            $map[$key] = $fn($value, $key);
-        }
-
-        return $map;
-    }
-
-    /**
-     * @param iterable<mixed> $iterable
-     *
-     * @return array<mixed>
-     *
-     * @throws Exception
-     */
     public static function mapKeyValue($iterable, callable $fn): array
     {
         self::invariant(
@@ -470,17 +448,10 @@ class Utils
     /**
      * UTF-8 compatible ord()
      *
-     * @param string $char
-     * @param string $encoding
-     *
      * @return mixed
      */
-    public static function ord($char, $encoding = 'UTF-8')
+    public static function ord(string $char, string $encoding = 'UTF-8')
     {
-        if (! $char && $char !== '0') {
-            return 0;
-        }
-
         if (! isset($char[1])) {
             return ord($char);
         }
@@ -535,7 +506,7 @@ class Utils
     public static function assertValidName($name)
     {
         $error = self::isValidNameError($name);
-        if ($error) {
+        if ($error !== null) {
             throw $error;
         }
     }
@@ -601,14 +572,12 @@ class Utils
      */
     public static function quotedOrList(array $items)
     {
-        $items = array_map(
-            static function ($item): string {
-                return sprintf('"%s"', $item);
-            },
+        $quoted = array_map(
+            static fn (string $item): string => sprintf('"%s"', $item),
             $items
         );
 
-        return self::orList($items);
+        return self::orList($quoted);
     }
 
     /**

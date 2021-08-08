@@ -183,7 +183,7 @@ class ReferenceExecutor implements ExecutorImplementation
         if ($operation !== null) {
             [$coercionErrors, $coercedVariableValues] = Values::getVariableValues(
                 $schema,
-                $operation->variableDefinitions ?? [],
+                $operation->variableDefinitions,
                 $rawVariableValues ?? []
             );
             if (count($coercionErrors ?? []) === 0) {
@@ -697,8 +697,8 @@ class ReferenceExecutor implements ExecutorImplementation
     }
 
     /**
-     * @param mixed             $rawError
-     * @param array<string|int> $path
+     * @param mixed                  $rawError
+     * @param array<int, string|int> $path
      *
      * @throws Error
      */
@@ -949,7 +949,7 @@ class ReferenceExecutor implements ExecutorImplementation
             return $returnType->serialize($result);
         } catch (Throwable $error) {
             throw new InvariantViolation(
-                'Expected a value of type "' . Utils::printSafe($returnType) . '" but received: ' . Utils::printSafe($result),
+                'Expected a value of type ' . Utils::printSafe($returnType) . ' but received: ' . Utils::printSafe($result) . '. ' . $error->getMessage(),
                 0,
                 $error
             );

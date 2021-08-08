@@ -10,7 +10,6 @@ use GraphQL\Language\AST\FragmentSpreadNode;
 use GraphQL\Language\AST\NodeKind;
 use GraphQL\Language\Visitor;
 use GraphQL\Language\VisitorOperation;
-use GraphQL\Utils\Utils;
 use GraphQL\Validator\ValidationContext;
 
 use function array_pop;
@@ -79,14 +78,15 @@ class NoFragmentCycles extends ValidationRule
             $this->spreadPath[] = $spreadNode;
             if ($cycleIndex === null) {
                 $spreadFragment = $context->getFragment($spreadName);
-                if ($spreadFragment) {
+                if ($spreadFragment !== null) {
                     $this->detectCycleRecursive($spreadFragment, $context);
                 }
             } else {
                 $cyclePath     = array_slice($this->spreadPath, $cycleIndex);
-                $fragmentNames = Utils::map(array_slice($cyclePath, 0, -1), static function ($s) {
-                    return $s->name->value;
-                });
+                $fragmentNames = [];
+                foreach (array_slice($cyclePath, 0, -1) as $frag) {
+                    $fragmentNames[] = $frag->name->value;
+                }
 
                 $context->reportError(new Error(
                     static::cycleErrorMessage($spreadName, $fragmentNames),

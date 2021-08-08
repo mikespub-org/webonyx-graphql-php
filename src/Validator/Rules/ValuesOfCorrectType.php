@@ -32,11 +32,8 @@ use GraphQL\Utils\Utils;
 use GraphQL\Validator\ValidationContext;
 use Throwable;
 
-use function array_combine;
 use function array_keys;
 use function array_map;
-use function array_values;
-use function iterator_to_array;
 use function sprintf;
 
 /**
@@ -73,7 +70,10 @@ class ValuesOfCorrectType extends ValidationRule
             NodeKind::LST          => function (ListValueNode $node) use ($context, &$fieldName): ?VisitorOperation {
                 // Note: TypeInfo will traverse into a list's item type, so look to the
                 // parent input type to check if it is a list.
-                $type = Type::getNullableType($context->getParentInputType());
+                $parentType = $context->getParentInputType();
+                $type       = $parentType === null
+                    ? null
+                    : Type::getNullableType($parentType);
                 if (! $type instanceof ListOfType) {
                     $this->isValidScalar($context, $node, $fieldName);
 
@@ -94,17 +94,13 @@ class ValuesOfCorrectType extends ValidationRule
 
                 unset($fieldName);
                 // Ensure every required field exists.
-                $inputFields  = $type->getFields();
-                $nodeFields   = iterator_to_array($node->fields);
-                $fieldNodeMap = array_combine(
-                    array_map(
-                        static function ($field): string {
-                            return $field->name->value;
-                        },
-                        $nodeFields
-                    ),
-                    array_values($nodeFields)
-                );
+                $inputFields = $type->getFields();
+
+                $fieldNodeMap = [];
+                foreach ($node->fields as $field) {
+                    $fieldNodeMap[$field->name->value] = $field;
+                }
+
                 foreach ($inputFields as $fieldName => $fieldDef) {
                     $fieldType = $fieldDef->getType();
                     if (isset($fieldNodeMap[$fieldName]) || ! $fieldDef->isRequired()) {
@@ -125,7 +121,7 @@ class ValuesOfCorrectType extends ValidationRule
                 $parentType = Type::getNamedType($context->getParentInputType());
                 /** @var ScalarType|EnumType|InputObjectType|ListOfType|NonNull $fieldType */
                 $fieldType = $context->getInputType();
-                if ($fieldType || ! ($parentType instanceof InputObjectType)) {
+                if ($fieldType !== null || ! ($parentType instanceof InputObjectType)) {
                     return;
                 }
 
@@ -148,7 +144,7 @@ class ValuesOfCorrectType extends ValidationRule
                 $type = Type::getNamedType($context->getInputType());
                 if (! $type instanceof EnumType) {
                     $this->isValidScalar($context, $node, $fieldName);
-                } elseif (! $type->getValue($node->value)) {
+                } elseif ($type->getValue($node->value) === null) {
                     $context->reportError(
                         new Error(
                             static::getBadValueMessage(
@@ -190,10 +186,10 @@ class ValuesOfCorrectType extends ValidationRule
     protected function isValidScalar(ValidationContext $context, ValueNode $node, $fieldName)
     {
         // Report any error at the full type expected by the location.
-        /** @var ScalarType|EnumType|InputObjectType|ListOfType|NonNull $locationType */
+        /** @var ScalarType|EnumType|InputObjectType|ListOfType|NonNull|null $locationType */
         $locationType = $context->getInputType();
 
-        if (! $locationType) {
+        if ($locationType === null) {
             return;
         }
 
@@ -250,14 +246,12 @@ class ValuesOfCorrectType extends ValidationRule
             $suggestions = Utils::suggestionList(
                 Printer::doPrint($node),
                 array_map(
-                    static function (EnumValueDefinition $value): string {
-                        return $value->name;
-                    },
+                    static fn (EnumValueDefinition $value): string => $value->name,
                     $type->getValues()
                 )
             );
 
-            return $suggestions ? 'Did you mean the enum value ' . Utils::orList($suggestions) . '?' : null;
+            return $suggestions === [] ? null : 'Did you mean the enum value ' . Utils::orList($suggestions) . '?';
         }
     }
 

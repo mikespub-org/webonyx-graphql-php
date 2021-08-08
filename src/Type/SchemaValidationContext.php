@@ -85,7 +85,7 @@ class SchemaValidationContext
     public function validateRootTypes(): void
     {
         $queryType = $this->schema->getQueryType();
-        if (! $queryType) {
+        if ($queryType === null) {
             $this->reportError(
                 'Query root type must be provided.',
                 $this->schema->getAstNode()
@@ -98,7 +98,7 @@ class SchemaValidationContext
         }
 
         $mutationType = $this->schema->getMutationType();
-        if ($mutationType && ! $mutationType instanceof ObjectType) {
+        if ($mutationType !== null && ! $mutationType instanceof ObjectType) {
             $this->reportError(
                 'Mutation root type must be Object type if provided, it cannot be ' . Utils::printSafe($mutationType) . '.',
                 $this->getOperationTypeNode($mutationType, 'mutation')
@@ -150,11 +150,9 @@ class SchemaValidationContext
             }
         }
 
-        return $operationTypeNode
-            ? $operationTypeNode->type
-            : ($type
-                ? $type->astNode
-                : null);
+        return $operationTypeNode === null
+            ? ($type === null ? null : $type->astNode)
+            : $operationTypeNode->type;
     }
 
     public function validateDirectives(): void
@@ -235,15 +233,18 @@ class SchemaValidationContext
                 continue;
             }
 
-            $nodes = Utils::map(
-                $directiveList,
-                static function (Directive $directive): ?DirectiveDefinitionNode {
-                    return $directive->astNode;
+            $nodes = [];
+            foreach ($directiveList as $dir) {
+                if ($dir->astNode === null) {
+                    continue;
                 }
-            );
+
+                $nodes[] = $dir->astNode;
+            }
+
             $this->reportError(
                 sprintf('Directive @%s defined multiple times.', $directiveName),
-                array_filter($nodes)
+                $nodes
             );
         }
     }
@@ -292,7 +293,7 @@ class SchemaValidationContext
     {
         $argNode = $this->getAllDirectiveArgNodes($directive, $argName)[0] ?? null;
 
-        return $argNode ? $argNode->type : null;
+        return $argNode === null ? null : $argNode->type;
     }
 
     public function validateTypes(): void
@@ -402,9 +403,9 @@ class SchemaValidationContext
                 }
             );
             if (! $includes) {
-                $errorNodes = $schemaDirective->astNode
-                    ? [$directive, $schemaDirective->astNode]
-                    : [$directive];
+                $errorNodes = $schemaDirective->astNode === null
+                    ? [$directive]
+                    : [$directive, $schemaDirective->astNode];
                 $this->reportError(
                     sprintf('Directive @%s not allowed at %s location.', $directiveName, $location),
                     $errorNodes
@@ -611,9 +612,9 @@ class SchemaValidationContext
     {
         $fieldNode = $this->getFieldNode($type, $fieldName);
 
-        return $fieldNode
-            ? $fieldNode->type
-            : null;
+        return $fieldNode === null
+            ? null
+            : $fieldNode->type;
     }
 
     /**
@@ -635,7 +636,7 @@ class SchemaValidationContext
     {
         $argNodes  = [];
         $fieldNode = $this->getFieldNode($type, $fieldName);
-        if ($fieldNode && $fieldNode->arguments) {
+        if ($fieldNode !== null && $fieldNode->arguments !== null) {
             foreach ($fieldNode->arguments as $node) {
                 if ($node->name->value !== $argName) {
                     continue;
@@ -657,9 +658,9 @@ class SchemaValidationContext
     {
         $fieldArgNode = $this->getFieldArgNode($type, $fieldName, $argName);
 
-        return $fieldArgNode
-            ? $fieldArgNode->type
-            : null;
+        return $fieldArgNode === null
+            ? null
+            : $fieldArgNode->type;
     }
 
     /**
@@ -784,7 +785,7 @@ class SchemaValidationContext
                 : null;
 
             // Assert interface field exists on type.
-            if (! $typeField) {
+            if ($typeField === null) {
                 $this->reportError(
                     sprintf(
                         'Interface field %s.%s expected but %s does not provide it.',
@@ -839,7 +840,7 @@ class SchemaValidationContext
                 }
 
                 // Assert interface field arg exists on type field.
-                if (! $typeArg) {
+                if ($typeArg === null) {
                     $this->reportError(
                         sprintf(
                             'Interface field argument %s.%s(%s:) expected but %s.%s does not provide it.',
@@ -895,7 +896,7 @@ class SchemaValidationContext
                     }
                 }
 
-                if ($ifaceArg || ! $typeArg->isRequired()) {
+                if ($ifaceArg !== null || ! $typeArg->isRequired()) {
                     continue;
                 }
 
@@ -954,7 +955,7 @@ class SchemaValidationContext
     {
         $memberTypes = $union->getTypes();
 
-        if (! $memberTypes) {
+        if ($memberTypes === []) {
             $this->reportError(
                 sprintf('Union type %s must define one or more member types.', $union->name),
                 $this->getAllNodes($union)
@@ -964,6 +965,18 @@ class SchemaValidationContext
         $includedTypeNames = [];
 
         foreach ($memberTypes as $memberType) {
+            if (! $memberType instanceof ObjectType) {
+                $this->reportError(
+                    sprintf(
+                        'Union type %s can only include Object types, it cannot include %s.',
+                        $union->name,
+                        Utils::printSafe($memberType)
+                    ),
+                    $this->getUnionMemberTypeNodes($union, Utils::printSafe($memberType))
+                );
+                continue;
+            }
+
             if (isset($includedTypeNames[$memberType->name])) {
                 $this->reportError(
                     sprintf('Union type %s can only include type %s once.', $union->name, $memberType->name),
@@ -973,18 +986,6 @@ class SchemaValidationContext
             }
 
             $includedTypeNames[$memberType->name] = true;
-            if ($memberType instanceof ObjectType) {
-                continue;
-            }
-
-            $this->reportError(
-                sprintf(
-                    'Union type %s can only include Object types, it cannot include %s.',
-                    $union->name,
-                    Utils::printSafe($memberType)
-                ),
-                $this->getUnionMemberTypeNodes($union, Utils::printSafe($memberType))
-            );
         }
     }
 
@@ -1013,7 +1014,7 @@ class SchemaValidationContext
     {
         $enumValues = $enumType->getValues();
 
-        if (! $enumValues) {
+        if ($enumValues === []) {
             $this->reportError(
                 sprintf('Enum type %s must define one or more values.', $enumType->name),
                 $this->getAllNodes($enumType)
@@ -1079,7 +1080,7 @@ class SchemaValidationContext
     {
         $fieldMap = $inputObj->getFields();
 
-        if (! $fieldMap) {
+        if ($fieldMap === []) {
             $this->reportError(
                 sprintf('Input Object type %s must define one or more fields.', $inputObj->name),
                 $this->getAllNodes($inputObj)

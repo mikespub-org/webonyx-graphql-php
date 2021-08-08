@@ -20,7 +20,6 @@ use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
-use function array_merge_recursive;
 use function array_unique;
 use function array_values;
 use function count;
@@ -122,7 +121,7 @@ class QueryPlan
         $implementors = [];
         /** @var FieldNode $fieldNode */
         foreach ($fieldNodes as $fieldNode) {
-            if (! $fieldNode->selectionSet) {
+            if ($fieldNode->selectionSet === null) {
                 continue;
             }
 
@@ -138,7 +137,7 @@ class QueryPlan
                 array_keys($subfields)
             ));
 
-            $queryPlan = array_merge_recursive(
+            $queryPlan = $this->arrayMergeDeep(
                 $queryPlan,
                 $subfields
             );
@@ -180,7 +179,7 @@ class QueryPlan
 
                 $subfields       = [];
                 $subImplementors = [];
-                if ($selectionNode->selectionSet) {
+                if (isset($selectionNode->selectionSet)) {
                     $subfields = $this->analyzeSubFields($selectionType, $selectionNode->selectionSet, $subImplementors);
                 }
 

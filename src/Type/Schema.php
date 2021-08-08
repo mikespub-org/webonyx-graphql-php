@@ -23,7 +23,6 @@ use GraphQL\Utils\Utils;
 use InvalidArgumentException;
 use Traversable;
 
-use function array_map;
 use function get_class;
 use function implode;
 use function is_array;
@@ -117,7 +116,7 @@ class Schema
                 Utils::getVariableType($config)
             );
             Utils::invariant(
-                ! $config->types || is_array($config->types) || is_callable($config->types),
+                ($config->types ?? []) !== [] || is_array($config->types) || is_callable($config->types),
                 '"types" must be array or callable if provided but got: ' . Utils::getVariableType($config->types)
             );
             Utils::invariant(
@@ -159,7 +158,7 @@ class Schema
 
         $this->resolvedTypes += Type::getStandardTypes() + Introspection::getTypes();
 
-        if ($this->config->typeLoader) {
+        if ($this->config->typeLoader !== null) {
             return;
         }
 
@@ -334,7 +333,7 @@ class Schema
         if (! isset($this->resolvedTypes[$name])) {
             $type = $this->loadType($name);
 
-            if (! $type) {
+            if ($type === null) {
                 return null;
             }
 
@@ -484,29 +483,12 @@ class Schema
                 }
             }
 
-            $this->implementationsMap = array_map(
-                static function (array $implementations): InterfaceImplementations {
-                    return new InterfaceImplementations($implementations['objects'], $implementations['interfaces']);
-                },
-                $foundImplementations
-            );
+            foreach ($foundImplementations as $name => $implementations) {
+                $this->implementationsMap[$name] = new InterfaceImplementations($implementations['objects'], $implementations['interfaces']);
+            }
         }
 
         return $this->implementationsMap;
-    }
-
-    /**
-     * @deprecated as of 14.4.0 use isSubType instead, will be removed in 15.0.0.
-     *
-     * Returns true if object type is concrete type of given abstract type
-     * (implementation for interfaces and members of union type for unions)
-     *
-     * @api
-     * @codeCoverageIgnore
-     */
-    public function isPossibleType(AbstractType $abstractType, ObjectType $possibleType): bool
-    {
-        return $this->isSubType($abstractType, $possibleType);
     }
 
     /**
@@ -564,7 +546,7 @@ class Schema
     {
         $errors = $this->validate();
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new InvariantViolation(implode("\n\n", $this->validationErrors));
         }
 
@@ -577,7 +559,7 @@ class Schema
             $type->assertValid();
 
             // Make sure type loader returns the same instance as registered in other places of schema
-            if (! $this->config->typeLoader) {
+            if ($this->config->typeLoader === null) {
                 continue;
             }
 

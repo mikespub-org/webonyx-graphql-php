@@ -39,7 +39,6 @@ use GraphQL\Type\Definition\WrappingType;
 use GraphQL\Type\Introspection;
 use GraphQL\Type\Schema;
 
-use function array_map;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -107,36 +106,6 @@ class TypeInfo
     }
 
     /**
-     * @deprecated moved to GraphQL\Utils\TypeComparators
-     *
-     * @codeCoverageIgnore
-     */
-    public static function isEqualType(Type $typeA, Type $typeB): bool
-    {
-        return TypeComparators::isEqualType($typeA, $typeB);
-    }
-
-    /**
-     * @deprecated moved to GraphQL\Utils\TypeComparators
-     *
-     * @codeCoverageIgnore
-     */
-    public static function isTypeSubTypeOf(Schema $schema, Type $maybeSubType, Type $superType)
-    {
-        return TypeComparators::isTypeSubTypeOf($schema, $maybeSubType, $superType);
-    }
-
-    /**
-     * @deprecated moved to GraphQL\Utils\TypeComparators
-     *
-     * @codeCoverageIgnore
-     */
-    public static function doTypesOverlap(Schema $schema, CompositeType $typeA, CompositeType $typeB)
-    {
-        return TypeComparators::doTypesOverlap($schema, $typeA, $typeB);
-    }
-
-    /**
      * Given root type scans through all fields to find nested types. Returns array where keys are for type name
      * and value contains corresponding type instance.
      *
@@ -154,11 +123,11 @@ class TypeInfo
      */
     public static function extractTypes($type, ?array $typeMap = null)
     {
-        if (! $typeMap) {
+        if (($typeMap ?? []) === []) {
             $typeMap = [];
         }
 
-        if (! $type) {
+        if ($type === null) {
             return $typeMap;
         }
 
@@ -207,15 +176,8 @@ class TypeInfo
 
         if ($type instanceof HasFieldsType) {
             foreach ($type->getFields() as $field) {
-                if (count($field->args) > 0) {
-                    $fieldArgTypes = array_map(
-                        static function (FieldArgument $arg): Type {
-                            return $arg->getType();
-                        },
-                        $field->args
-                    );
-
-                    $nestedTypes = array_merge($nestedTypes, $fieldArgTypes);
+                foreach ($field->args as $arg) {
+                    $nestedTypes[] = $arg->getType();
                 }
 
                 $nestedTypes[] = $field->getType();
@@ -289,12 +251,12 @@ class TypeInfo
             case $node instanceof FieldNode:
                 $parentType = $this->getParentType();
                 $fieldDef   = null;
-                if ($parentType) {
+                if ($parentType !== null) {
                     $fieldDef = self::getFieldDefinition($schema, $parentType, $node);
                 }
 
                 $fieldType = null;
-                if ($fieldDef) {
+                if ($fieldDef !== null) {
                     $fieldType = $fieldDef->getType();
                 }
 
@@ -322,12 +284,12 @@ class TypeInfo
             case $node instanceof InlineFragmentNode:
             case $node instanceof FragmentDefinitionNode:
                 $typeConditionNode = $node->typeCondition;
-                $outputType        = $typeConditionNode
-                    ? self::typeFromAST(
+                $outputType        = $typeConditionNode === null
+                    ? Type::getNamedType($this->getType())
+                    : self::typeFromAST(
                         $schema,
                         $typeConditionNode
-                    )
-                    : Type::getNamedType($this->getType());
+                    );
                 $this->typeStack[] = Type::isOutputType($outputType) ? $outputType : null;
                 break;
 
@@ -339,7 +301,7 @@ class TypeInfo
             case $node instanceof ArgumentNode:
                 $fieldOrDirective = $this->getDirective() ?? $this->getFieldDef();
                 $argDef           = $argType = null;
-                if ($fieldOrDirective) {
+                if ($fieldOrDirective !== null) {
                     /** @var FieldArgument $argDef */
                     $argDef = Utils::find(
                         $fieldOrDirective->args,
@@ -353,7 +315,7 @@ class TypeInfo
                 }
 
                 $this->argument            = $argDef;
-                $this->defaultValueStack[] = $argDef && $argDef->defaultValueExists() ? $argDef->defaultValue : Utils::undefined();
+                $this->defaultValueStack[] = $argDef !== null && $argDef->defaultValueExists() ? $argDef->defaultValue : Utils::undefined();
                 $this->inputTypeStack[]    = Type::isInputType($argType) ? $argType : null;
                 break;
 
@@ -370,16 +332,15 @@ class TypeInfo
 
             case $node instanceof ObjectFieldNode:
                 $objectType     = Type::getNamedType($this->getInputType());
-                $fieldType      = null;
                 $inputField     = null;
                 $inputFieldType = null;
                 if ($objectType instanceof InputObjectType) {
                     $tmp            = $objectType->getFields();
                     $inputField     = $tmp[$node->name->value] ?? null;
-                    $inputFieldType = $inputField ? $inputField->getType() : null;
+                    $inputFieldType = $inputField === null ? null : $inputField->getType();
                 }
 
-                $this->defaultValueStack[] = $inputField && $inputField->defaultValueExists() ? $inputField->defaultValue : Utils::undefined();
+                $this->defaultValueStack[] = $inputField !== null && $inputField->defaultValueExists() ? $inputField->defaultValue : Utils::undefined();
                 $this->inputTypeStack[]    = Type::isInputType($inputFieldType) ? $inputFieldType : null;
                 break;
 

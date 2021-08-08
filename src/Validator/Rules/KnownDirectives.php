@@ -36,7 +36,6 @@ use GraphQL\Language\AST\UnionTypeExtensionNode;
 use GraphQL\Language\AST\VariableDefinitionNode;
 use GraphQL\Language\DirectiveLocation;
 use GraphQL\Type\Definition\Directive;
-use GraphQL\Utils\Utils;
 use GraphQL\Validator\ASTValidationContext;
 use GraphQL\Validator\SDLValidationContext;
 use GraphQL\Validator\ValidationContext;
@@ -62,9 +61,9 @@ class KnownDirectives extends ValidationRule
     {
         $locationsMap      = [];
         $schema            = $context->getSchema();
-        $definedDirectives = $schema
-            ? $schema->getDirectives()
-            : Directive::getInternalDirectives();
+        $definedDirectives = $schema === null
+            ? Directive::getInternalDirectives()
+            : $schema->getDirectives();
 
         foreach ($definedDirectives as $directive) {
             $locationsMap[$directive->name] = $directive->locations;
@@ -77,12 +76,12 @@ class KnownDirectives extends ValidationRule
                 continue;
             }
 
-            $locationsMap[$def->name->value] = Utils::map(
-                $def->locations,
-                static function ($name): string {
-                    return $name->value;
-                }
-            );
+            $locationNames = [];
+            foreach ($def->locations as $location) {
+                $locationNames[] = $location->value;
+            }
+
+            $locationsMap[$def->name->value] = $locationNames;
         }
 
         return [
@@ -99,7 +98,7 @@ class KnownDirectives extends ValidationRule
                 $name      = $node->name->value;
                 $locations = $locationsMap[$name] ?? null;
 
-                if (! $locations) {
+                if ($locations === null) {
                     $context->reportError(new Error(
                         static::unknownDirectiveMessage($name),
                         [$node]
@@ -110,7 +109,7 @@ class KnownDirectives extends ValidationRule
 
                 $candidateLocation = $this->getDirectiveLocationForASTPath($ancestors);
 
-                if (! $candidateLocation || in_array($candidateLocation, $locations, true)) {
+                if ($candidateLocation === '' || in_array($candidateLocation, $locations, true)) {
                     return;
                 }
 
