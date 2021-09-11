@@ -607,11 +607,14 @@ class ReferenceExecutor implements ExecutorImplementation
         $schemaMetaFieldDef   ??= Introspection::schemaMetaFieldDef();
         $typeMetaFieldDef     ??= Introspection::typeMetaFieldDef();
         $typeNameMetaFieldDef ??= Introspection::typeNameMetaFieldDef();
-        if ($fieldName === $schemaMetaFieldDef->name && $schema->getQueryType() === $parentType) {
+
+        $queryType = $schema->getQueryType();
+
+        if ($fieldName === $schemaMetaFieldDef->name && $queryType === $parentType) {
             return $schemaMetaFieldDef;
         }
 
-        if ($fieldName === $typeMetaFieldDef->name && $schema->getQueryType() === $parentType) {
+        if ($fieldName === $typeMetaFieldDef->name && $queryType === $parentType) {
             return $typeMetaFieldDef;
         }
 
@@ -1156,14 +1159,12 @@ class ReferenceExecutor implements ExecutorImplementation
 
     /**
      * @param array<mixed> $result
-     *
-     * @return Error
      */
     protected function invalidReturnTypeError(
         ObjectType $returnType,
         $result,
         ArrayObject $fieldNodes
-    ) {
+    ): Error {
         return new Error(
             'Expected value of type "' . $returnType->name . '" but got: ' . Utils::printSafe($result) . '.',
             $fieldNodes
@@ -1336,6 +1337,16 @@ class ReferenceExecutor implements ExecutorImplementation
         if (! $this->exeContext->schema->isSubType($returnType, $runtimeType)) {
             throw new InvariantViolation(
                 sprintf('Runtime Object type "%s" is not a possible type for "%s".', $runtimeType, $returnType)
+            );
+        }
+
+        if ($this->exeContext->schema->getType($runtimeType->name) === null) {
+            throw new InvariantViolation(
+                'Schema does not contain type "' . $runtimeType->name . '". ' .
+                'This can happen when an object type is only referenced indirectly through ' .
+                'abstract types and never directly through fields.' .
+                'List the type in the option "types" during schema construction, ' .
+                'see https://webonyx.github.io/graphql-php/type-system/schema/#configuration-options.'
             );
         }
 

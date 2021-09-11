@@ -17,11 +17,16 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Use native PHP types for properties of `Type` and its subclasses
 - Throw `SerializationError` over client safe `Error` when failing to serialize leaf types
 - Move debug entries in errors under `extensions` key
+- Use native PHP types for `Schema` and `SchemaConfig`
+- Always throw `RequestError` with useful message when clients provide an invalid JSON body
 
 ### Added
 
 - Improve extendability of validator rules
 - Add tests for errors that occur when undeclared fields are passed in input
+- Warn about orphaned object types
+- Expose structured enumeration of directive locations
+- Allow lazy input object fields
 
 ### Optimized
 
@@ -34,6 +39,9 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Clarify error when attempting to coerce anything but `array` or `stdClass` to an input object
 - Allow directives on variable definitions
 - Handle `null` parent of list in `ValuesOfCorrectType::getVisitor`
+- Allow sending both `query` and `queryId`, ignore `queryId` in that case
+- Fix `extend()` to preserve `repeatable` (#931)
+- Preserve extended methods from class-based types in `SchemaExtender::extend()`
 
 ### Removed
 

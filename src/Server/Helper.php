@@ -90,18 +90,9 @@ class Helper
                 $rawBody    = $readRawBodyFn === null
                     ? $this->readRawBody()
                     : $readRawBodyFn();
-                $bodyParams = json_decode($rawBody, true);
+                $bodyParams = $this->decodeJson($rawBody);
 
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    throw new RequestError('Could not parse JSON: ' . json_last_error_msg());
-                }
-
-                if (! is_array($bodyParams)) {
-                    throw new RequestError(
-                        'GraphQL Server expects JSON object or array, but got ' .
-                        Utils::printSafeJson($bodyParams)
-                    );
-                }
+                $this->assertJsonObjectOrArray($bodyParams);
             } elseif (stripos($contentType, 'application/x-www-form-urlencoded') !== false) {
                 $bodyParams = $_POST;
             } elseif (stripos($contentType, 'multipart/form-data') !== false) {
@@ -165,10 +156,6 @@ class Helper
         $queryId = $params->queryId ?? '';
         if ($query === '' && $queryId === '') {
             $errors[] = new RequestError('GraphQL Request must include at least one of those two parameters: "query" or "queryId"');
-        }
-
-        if ($query !== '' && $queryId !== '') {
-            $errors[] = new RequestError('GraphQL Request parameters "query" and "queryId" are mutually exclusive');
         }
 
         if (! is_string($query)) {
@@ -279,9 +266,9 @@ class Helper
                 );
             }
 
-            $doc = ($op->queryId ?? '') === ''
-                ? $op->query
-                : $this->loadPersistedQuery($config, $op);
+            $doc = $op->queryId !== null && $op->query === null
+                ? $this->loadPersistedQuery($config, $op)
+                : $op->query;
 
             if (! $doc instanceof DocumentNode) {
                 $doc = Parser::parse($doc);
@@ -534,22 +521,9 @@ class Helper
             } elseif (stripos($contentType[0], 'application/json') !== false) {
                 $bodyParams = $request instanceof ServerRequestInterface
                     ? $request->getParsedBody()
-                    : json_decode((string) $request->getBody(), true);
+                    : $this->decodeJson((string) $request->getBody());
 
-                if ($bodyParams === null) {
-                    throw new InvariantViolation(
-                        $request instanceof ServerRequestInterface
-                         ? 'Expected to receive a parsed body for "application/json" PSR-7 request but got null'
-                         : 'Expected to receive a JSON array in body for "application/json" PSR-7 request'
-                    );
-                }
-
-                if (! is_array($bodyParams)) {
-                    throw new RequestError(
-                        'GraphQL Server expects JSON object or array, but got ' .
-                        Utils::printSafeJson($bodyParams)
-                    );
-                }
+                $this->assertJsonObjectOrArray($bodyParams);
             } else {
                 parse_str((string) $request->getBody(), $bodyParams);
 
@@ -566,6 +540,36 @@ class Helper
             $bodyParams,
             $queryParams
         );
+    }
+
+    /**
+     * @return mixed
+     *
+     * @throws RequestError
+     */
+    protected function decodeJson(string $rawBody)
+    {
+        $bodyParams = json_decode($rawBody, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RequestError('Expected JSON object or array for "application/json" request, but failed to parse because: ' . json_last_error_msg());
+        }
+
+        return $bodyParams;
+    }
+
+    /**
+     * @param mixed $bodyParams
+     *
+     * @throws RequestError
+     */
+    protected function assertJsonObjectOrArray($bodyParams): void
+    {
+        if (! is_array($bodyParams)) {
+            throw new RequestError(
+                'Expected JSON object or array for "application/json" request, got: ' . Utils::printSafeJson($bodyParams)
+            );
+        }
     }
 
     /**

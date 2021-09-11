@@ -25,7 +25,7 @@ class RequestValidationTest extends TestCase
         self::assertValid($parsedBody);
     }
 
-    private static function assertValid($parsedRequest)
+    private static function assertValid($parsedRequest): void
     {
         $helper = new Helper();
         $errors = $helper->validateOperationParams($parsedRequest);
@@ -60,7 +60,7 @@ class RequestValidationTest extends TestCase
         );
     }
 
-    private function assertInputError($parsedRequest, $expectedMessage)
+    private function assertInputError($parsedRequest, $expectedMessage): void
     {
         $helper = new Helper();
         $errors = $helper->validateOperationParams($parsedRequest);
@@ -69,19 +69,6 @@ class RequestValidationTest extends TestCase
         } else {
             self::fail('Expected error not returned');
         }
-    }
-
-    public function testFailsWhenBothQueryAndQueryIdArePresent(): void
-    {
-        $parsedBody = OperationParams::create([
-            'query'   => '{my query}',
-            'queryId' => 'my-query-id',
-        ]);
-
-        $this->assertInputError(
-            $parsedBody,
-            'GraphQL Request parameters "query" and "queryId" are mutually exclusive'
-        );
     }
 
     public function testFailsWhenQueryParameterIsNotString(): void
