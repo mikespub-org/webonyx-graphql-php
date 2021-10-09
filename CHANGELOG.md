@@ -20,6 +20,8 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Use native PHP types for `Schema` and `SchemaConfig`
 - Always throw `RequestError` with useful message when clients provide an invalid JSON body
 - Move class `BlockString` from namespace `GraphQL\Utils` to `GraphQL\Language`
+- Return string-keyed arrays from `GraphQL::getStandardDirectives()`, `GraphQL::getStandardTypes()` and `GraphQL::getStandardValidationRules()`
+- Move complexity related code from `FieldDefinition` to `QueryComplexity`
 
 ### Added
 
@@ -27,6 +29,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Add tests for errors that occur when undeclared fields are passed in input
 - Warn about orphaned object types
 - Expose structured enumeration of directive locations
+- Add `AST::concatAST()` utility
 - Allow lazy input object fields
 
 ### Optimized
@@ -43,6 +46,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Allow sending both `query` and `queryId`, ignore `queryId` in that case
 - Fix `extend()` to preserve `repeatable` (#931)
 - Preserve extended methods from class-based types in `SchemaExtender::extend()`
+- Fix printing of empty types (#940)
 
 ### Removed
 
@@ -51,7 +55,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove deprecated `GraphQL::executeAndReturnResult()`
 - Remove deprecated experimental CoroutineExecutor
 - Remove deprecated `FormattedError::create()` and `FormattedError::createFromPHPError()`
-- Remove `GraphQL::setPromiseAdapter()`
+- Remove deprecated `GraphQL::setPromiseAdapter()`
 - Remove deprecated `AST::getOperation()`
 - Remove deprecated constants from `BreakingChangesFinder`
 - Remove deprecated `DocumentValidator::isValidLiteralValue()`
@@ -60,6 +64,8 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove deprecated `Schema::isPossibleType()`
 - Remove deprecated methods from `TypeInfo`
 - Remove deprecated `Values::valueFromAST()` and `Values::isValidPHPValue()`
+- Remove deprecated public property access to `InputObjectField::$type`
+- Remove alias `GraphQL\Validator\Rules\AbstractQuerySecurity`, use `GraphQL\Validator\Rules\QuerySecurityRule`
 
 ## 14.9.0
 
