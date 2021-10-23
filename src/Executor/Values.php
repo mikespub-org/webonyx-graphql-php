@@ -33,6 +33,11 @@ use function array_key_exists;
 use function count;
 use function sprintf;
 
+/**
+ * @see ArgumentNode - force IDE import
+ *
+ * @phpstan-import-type ArgumentNodeValue from ArgumentNode
+ */
 class Values
 {
     /**
@@ -41,11 +46,11 @@ class Values
      * to match the variable definitions, an Error will be thrown.
      *
      * @param NodeList<VariableDefinitionNode> $varDefNodes
-     * @param array<string, mixed>             $inputs
+     * @param array<string, mixed>             $rawVariableValues
      *
      * @return array{array<int, Error>, null}|array{null, array<string, mixed>}
      */
-    public static function getVariableValues(Schema $schema, NodeList $varDefNodes, array $inputs): array
+    public static function getVariableValues(Schema $schema, NodeList $varDefNodes, array $rawVariableValues): array
     {
         $errors        = [];
         $coercedValues = [];
@@ -66,9 +71,9 @@ class Values
                     [$varDefNode->type]
                 );
             } else {
-                $hasValue = array_key_exists($varName, $inputs);
+                $hasValue = array_key_exists($varName, $rawVariableValues);
                 $value    = $hasValue
-                    ? $inputs[$varName]
+                    ? $rawVariableValues[$varName]
                     : Utils::undefined();
 
                 if (! $hasValue && ($varDefNode->defaultValue !== null)) {
@@ -142,7 +147,7 @@ class Values
      * @param FragmentSpreadNode|FieldNode|InlineFragmentNode|EnumValueDefinitionNode|FieldDefinitionNode $node
      * @param mixed[]|null                                                                                $variableValues
      *
-     * @return array<mixed>|null
+     * @return array<string, mixed>|null
      */
     public static function getDirectiveValues(Directive $directiveDef, $node, $variableValues = null): ?array
     {
@@ -170,7 +175,7 @@ class Values
      * @param FieldNode|DirectiveNode   $node
      * @param mixed[]                   $variableValues
      *
-     * @return mixed[]
+     * @return array<string, mixed>
      *
      * @throws Error
      */
@@ -180,7 +185,8 @@ class Values
             return [];
         }
 
-        $argumentNodes    = $node->arguments;
+        $argumentNodes = $node->arguments;
+        /** @var array<string, ArgumentNodeValue> $argumentValueMap */
         $argumentValueMap = [];
         foreach ($argumentNodes as $argumentNode) {
             $argumentValueMap[$argumentNode->name->value] = $argumentNode->value;
@@ -190,16 +196,16 @@ class Values
     }
 
     /**
-     * @param FieldDefinition|Directive $fieldDefinition
-     * @param ArgumentNode[]            $argumentValueMap
-     * @param mixed[]                   $variableValues
-     * @param Node|null                 $referenceNode
+     * @param FieldDefinition|Directive        $fieldDefinition
+     * @param array<string, ArgumentNodeValue> $argumentValueMap
+     * @param mixed[]                          $variableValues
+     * @param Node|null                        $referenceNode
      *
      * @return mixed[]
      *
      * @throws Error
      */
-    public static function getArgumentValuesForMap($fieldDefinition, $argumentValueMap, $variableValues = null, $referenceNode = null): array
+    public static function getArgumentValuesForMap($fieldDefinition, array $argumentValueMap, $variableValues = null, $referenceNode = null): array
     {
         $argumentDefinitions = $fieldDefinition->args;
         $coercedValues       = [];

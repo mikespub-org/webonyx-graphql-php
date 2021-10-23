@@ -92,6 +92,25 @@ type HelloScalars {
         self::assertEquals($output, $body);
     }
 
+    /**
+     * @see it('include standard type only if it is used')
+     */
+    public function testIncludeStandardTypeOnlyIfItIsUsed(): void
+    {
+        $schema = BuildSchema::build('type Query');
+
+        // String and Boolean are always included through introspection types
+        $typeMap = $schema->getTypeMap();
+        self::assertArrayNotHasKey('Int', $typeMap);
+        self::assertArrayNotHasKey('Float', $typeMap);
+        self::assertArrayNotHasKey('ID', $typeMap);
+
+        self::markTestIncomplete('TODO we differ from graphql-js due to lazy loading, see https://github.com/webonyx/graphql-php/issues/964#issuecomment-945969162');
+        self::assertNull($schema->getType('Int'));
+        self::assertNull($schema->getType('Float'));
+        self::assertNull($schema->getType('ID'));
+    }
+
     private function cycleOutput($body, $options = [])
     {
         $ast    = Parser::parse($body);
@@ -480,127 +499,6 @@ type WorldTwo {
         ');
         $errors = $schema->validate();
         self::assertNotEmpty($errors);
-    }
-
-    /**
-     * @see it('Specifying Union type using __typename')
-     */
-    public function testSpecifyingUnionTypeUsingTypename(): void
-    {
-        $schema    = BuildSchema::buildAST(Parser::parse('
-            type Query {
-              fruits: [Fruit]
-            }
-            
-            union Fruit = Apple | Banana
-            
-            type Apple {
-              color: String
-            }
-            
-            type Banana {
-              length: Int
-            }
-        '));
-        $query     = '
-            {
-              fruits {
-                ... on Apple {
-                  color
-                }
-                ... on Banana {
-                  length
-                }
-              }
-            }
-        ';
-        $rootValue = [
-            'fruits' => [
-                [
-                    'color'      => 'green',
-                    '__typename' => 'Apple',
-                ],
-                [
-                    'length'     => 5,
-                    '__typename' => 'Banana',
-                ],
-            ],
-        ];
-        $expected  = [
-            'data' => [
-                'fruits' => [
-                    ['color' => 'green'],
-                    ['length' => 5],
-                ],
-            ],
-        ];
-
-        $result = GraphQL::executeQuery($schema, $query, $rootValue);
-        self::assertEquals($expected, $result->toArray(DebugFlag::INCLUDE_DEBUG_MESSAGE));
-    }
-
-    /**
-     * @see it('Specifying Interface type using __typename')
-     */
-    public function testSpecifyingInterfaceUsingTypename(): void
-    {
-        $schema    = BuildSchema::buildAST(Parser::parse('
-            type Query {
-              characters: [Character]
-            }
-            
-            interface Character {
-              name: String!
-            }
-            
-            type Human implements Character {
-              name: String!
-              totalCredits: Int
-            }
-            
-            type Droid implements Character {
-              name: String!
-              primaryFunction: String
-            }
-        '));
-        $query     = '
-            {
-              characters {
-                name
-                ... on Human {
-                  totalCredits
-                }
-                ... on Droid {
-                  primaryFunction
-                }
-              }
-            }
-        ';
-        $rootValue = [
-            'characters' => [
-                [
-                    'name'         => 'Han Solo',
-                    'totalCredits' => 10,
-                    '__typename'   => 'Human',
-                ],
-                [
-                    'name'            => 'R2-D2',
-                    'primaryFunction' => 'Astromech',
-                    '__typename'      => 'Droid',
-                ],
-            ],
-        ];
-        $expected  = [
-            'data' => [
-                'characters' => [
-                    ['name' => 'Han Solo', 'totalCredits' => 10],
-                    ['name' => 'R2-D2', 'primaryFunction' => 'Astromech'],
-                ],
-            ],
-        ];
-
-        $result = GraphQL::executeQuery($schema, $query, $rootValue);
-        self::assertEquals($expected, $result->toArray(DebugFlag::INCLUDE_DEBUG_MESSAGE));
     }
 
     /**
