@@ -20,7 +20,6 @@ use GraphQL\Language\AST\UnionTypeExtensionNode;
 use GraphQL\Type\Definition\CustomScalarType;
 use GraphQL\Type\Definition\Directive;
 use GraphQL\Type\Definition\EnumType;
-use GraphQL\Type\Definition\EnumValueDefinition;
 use GraphQL\Type\Definition\FieldArgument;
 use GraphQL\Type\Definition\ImplementingType;
 use GraphQL\Type\Definition\InputObjectType;
@@ -215,14 +214,9 @@ class SchemaExtender
     protected static function extendEnumValueMap(EnumType $type): array
     {
         $newValueMap = [];
-        /** @var array<string, EnumValueDefinition> $oldValueMap */
-        $oldValueMap = [];
-        foreach ($type->getValues() as $value) {
-            $oldValueMap[$value->name] = $value;
-        }
 
-        foreach ($oldValueMap as $key => $value) {
-            $newValueMap[$key] = [
+        foreach ($type->getValues() as $value) {
+            $newValueMap[$value->name] = [
                 'name' => $value->name,
                 'description' => $value->description,
                 'value' => $value->value,
@@ -239,12 +233,7 @@ class SchemaExtender
              */
             foreach (static::$typeExtensionsMap[$type->name] as $extension) {
                 foreach ($extension->values as $value) {
-                    $valueName = $value->name->value;
-                    if (isset($oldValueMap[$valueName])) {
-                        throw new Error('Enum value "' . $type->name . '.' . $valueName . '" already exists in the schema. It cannot also be defined in this type extension.', [$value]);
-                    }
-
-                    $newValueMap[$valueName] = static::$astBuilder->buildEnumValue($value);
+                    $newValueMap[$value->name->value] = static::$astBuilder->buildEnumValue($value);
                 }
             }
         }
@@ -438,9 +427,9 @@ class SchemaExtender
     }
 
     /**
-     * @param T $type
+     * @param T &NamedType $type
      *
-     * @return T
+     * @return T&NamedType
      *
      * @template T of Type
      */
@@ -529,7 +518,10 @@ class SchemaExtender
         array $options = [],
         ?callable $typeConfigDecorator = null
     ): Schema {
-        if (! (isset($options['assumeValid']) || isset($options['assumeValidSDL']))) {
+        if (
+            ! ($options['assumeValid'] ?? false)
+            && ! ($options['assumeValidSDL'] ?? false)
+        ) {
             DocumentValidator::assertValidSDLExtension($documentAST, $schema);
         }
 
@@ -617,14 +609,7 @@ class SchemaExtender
 
         if ($schemaDef !== null) {
             foreach ($schemaDef->operationTypes as $operationType) {
-                $operation = $operationType->operation;
-                $type      = $operationType->type;
-
-                if (isset($operationTypes[$operation])) {
-                    throw new Error('Must provide only one ' . $operation . ' type in schema.');
-                }
-
-                $operationTypes[$operation] = static::$astBuilder->buildType($type);
+                $operationTypes[$operationType->operation] = static::$astBuilder->buildType($operationType->type);
             }
         }
 
@@ -634,12 +619,7 @@ class SchemaExtender
             }
 
             foreach ($schemaExtension->operationTypes as $operationType) {
-                $operation = $operationType->operation;
-                if (isset($operationTypes[$operation])) {
-                    throw new Error('Must provide only one ' . $operation . ' type in schema.');
-                }
-
-                $operationTypes[$operation] = static::$astBuilder->buildType($operationType->type);
+                $operationTypes[$operationType->operation] = static::$astBuilder->buildType($operationType->type);
             }
         }
 

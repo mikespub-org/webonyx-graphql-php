@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace GraphQL\Type\Definition;
 
-use GraphQL\Error\Error;
 use GraphQL\Error\InvariantViolation;
 use GraphQL\Language\AST\FieldDefinitionNode;
 use GraphQL\Type\Schema;
@@ -12,6 +11,7 @@ use GraphQL\Utils\Utils;
 
 use function is_array;
 use function is_callable;
+use function is_iterable;
 use function is_string;
 use function sprintf;
 
@@ -87,9 +87,9 @@ class FieldDefinition
             $fields = $fields();
         }
 
-        if (! is_array($fields)) {
+        if (! is_iterable($fields)) {
             throw new InvariantViolation(
-                "{$type->name} fields must be an array or a callable which returns such an array."
+                "{$type->name} fields must be an iterable or a callable which returns such an iterable."
             );
         }
 
@@ -191,10 +191,9 @@ class FieldDefinition
      */
     public function assertValid(Type $parentType): void
     {
-        try {
-            Utils::assertValidName($this->name);
-        } catch (Error $e) {
-            throw new InvariantViolation(sprintf('%s.%s: %s', $parentType->name, $this->name, $e->getMessage()));
+        $error = Utils::isValidNameError($this->name);
+        if ($error !== null) {
+            throw new InvariantViolation("{$parentType->name}.{$this->name}: {$error->getMessage()}");
         }
 
         Utils::invariant(

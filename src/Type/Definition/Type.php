@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GraphQL\Type\Definition;
 
+use GraphQL\Error\Error;
 use GraphQL\Error\InvariantViolation;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\TypeDefinitionNode;
@@ -187,18 +188,21 @@ abstract class Type implements JsonSerializable
     {
         $standardTypes = self::getStandardTypes();
         foreach ($types as $type) {
-            Utils::invariant(
-                $type instanceof Type,
-                'Expecting instance of %s, got %s',
-                self::class,
-                Utils::printSafe($type)
-            );
-            Utils::invariant(
-                isset($type->name, $standardTypes[$type->name]),
-                'Expecting one of the following names for a standard type: %s, got %s',
-                implode(', ', array_keys($standardTypes)),
-                Utils::printSafe($type->name ?? null)
-            );
+            // @phpstan-ignore-next-line generic type is not enforced by PHP
+            if (! $type instanceof Type) {
+                $typeClass = self::class;
+                $notType   = Utils::printSafe($type);
+
+                throw new InvariantViolation("Expecting instance of {$typeClass}, got {$notType}");
+            }
+
+            if (! isset($type->name, $standardTypes[$type->name])) {
+                $standardTypeNames   = implode(', ', array_keys($standardTypes));
+                $notStandardTypeName = Utils::printSafe($type->name ?? null);
+
+                throw new InvariantViolation("Expecting one of the following names for a standard type: {$standardTypeNames}; got {$notStandardTypeName}");
+            }
+
             static::$standardTypes[$type->name] = $type;
         }
     }
@@ -276,7 +280,7 @@ abstract class Type implements JsonSerializable
     }
 
     /**
-     * @throws InvariantViolation
+     * @throws Error
      */
     public function assertValid(): void
     {

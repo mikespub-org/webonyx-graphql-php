@@ -9,17 +9,13 @@ use GraphQL\Language\VisitorOperation;
 use GraphQL\Validator\SDLValidationContext;
 use GraphQL\Validator\ValidationContext;
 
-use function class_alias;
-
 abstract class ValidationRule
 {
     protected string $name;
 
     public function getName(): string
     {
-        return $this->name === '' || $this->name === null
-            ? static::class
-            : $this->name;
+        return $this->name ?? static::class;
     }
 
     /**
@@ -54,5 +50,3 @@ abstract class ValidationRule
         return [];
     }
 }
-
-class_alias(ValidationRule::class, 'GraphQL\Validator\Rules\AbstractValidationRule');
