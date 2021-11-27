@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace GraphQL\Tests\Language;
 
-use GraphQL\Error\InvariantViolation;
 use GraphQL\Error\SyntaxError;
 use GraphQL\Language\AST\ArgumentNode;
 use GraphQL\Language\AST\FieldNode;
@@ -12,7 +11,6 @@ use GraphQL\Language\AST\NameNode;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\NodeKind;
 use GraphQL\Language\AST\NodeList;
-use GraphQL\Language\AST\ObjectTypeDefinitionNode;
 use GraphQL\Language\AST\OperationDefinitionNode;
 use GraphQL\Language\AST\SelectionSetNode;
 use GraphQL\Language\AST\StringValueNode;
@@ -22,35 +20,16 @@ use GraphQL\Language\Source;
 use GraphQL\Language\SourceLocation;
 use GraphQL\Utils\Utils;
 use PHPUnit\Framework\TestCase;
-use stdClass;
 
 use function file_get_contents;
 use function sprintf;
 
 class ParserTest extends TestCase
 {
-    public function testAssertsThatASourceToParseIsNotNull(): void
-    {
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage('GraphQL query body is expected to be string, but got NULL');
-        Parser::parse(null);
-    }
-
-    public function testAssertsThatASourceToParseIsNotArray(): void
-    {
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage('GraphQL query body is expected to be string, but got array');
-        Parser::parse(['a' => 'b']);
-    }
-
-    public function testAssertsThatASourceToParseIsNotObject(): void
-    {
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage('GraphQL query body is expected to be string, but got stdClass');
-        Parser::parse(new stdClass());
-    }
-
-    public function parseProvidesUsefulErrors()
+    /**
+     * @return array<int, array{0: string, 1: string, 2: string, 3?: list<int>, 4?: list<SourceLocation>}>
+     */
+    public function parseProvidesUsefulErrors(): array
     {
         return [
             [
@@ -72,9 +51,21 @@ fragment MissingOn Type
                 'Syntax Error: Expected "on", found Name "Type"',
                 "Syntax Error: Expected \"on\", found Name \"Type\"\n\nGraphQL request (2:20)\n1: { ...MissingOn }\n2: fragment MissingOn Type\n                      ^\n3: \n",
             ],
-            ['{ field: {} }', 'Syntax Error: Expected Name, found {', "Syntax Error: Expected Name, found {\n\nGraphQL request (1:10)\n1: { field: {} }\n            ^\n"],
-            ['notanoperation Foo { field }', 'Syntax Error: Unexpected Name "notanoperation"', "Syntax Error: Unexpected Name \"notanoperation\"\n\nGraphQL request (1:1)\n1: notanoperation Foo { field }\n   ^\n"],
-            ['...', 'Syntax Error: Unexpected ...', "Syntax Error: Unexpected ...\n\nGraphQL request (1:1)\n1: ...\n   ^\n"],
+            [
+                '{ field: {} }',
+                'Syntax Error: Expected Name, found {',
+                "Syntax Error: Expected Name, found {\n\nGraphQL request (1:10)\n1: { field: {} }\n            ^\n",
+            ],
+            [
+                'notanoperation Foo { field }',
+                'Syntax Error: Unexpected Name "notanoperation"',
+                "Syntax Error: Unexpected Name \"notanoperation\"\n\nGraphQL request (1:1)\n1: notanoperation Foo { field }\n   ^\n",
+            ],
+            [
+                '...',
+                'Syntax Error: Unexpected ...',
+                "Syntax Error: Unexpected ...\n\nGraphQL request (1:1)\n1: ...\n   ^\n",
+            ],
         ];
     }
 
@@ -737,14 +728,14 @@ GRAPHQL
 
     public function testPartiallyParsesSource(): void
     {
-        self::assertInstanceOf(
-            NameNode::class,
-            Parser::name('Foo')
+        self::assertSame(
+            'Foo',
+            Parser::name('Foo')->value
         );
 
-        self::assertInstanceOf(
-            ObjectTypeDefinitionNode::class,
-            Parser::objectTypeDefinition('type Foo { name: String }')
+        self::assertSame(
+            'Foo',
+            Parser::objectTypeDefinition('type Foo { name: String }')->name->value
         );
 
         self::assertInstanceOf(
@@ -752,23 +743,23 @@ GRAPHQL
             Parser::valueLiteral('$foo')
         );
 
-        self::assertInstanceOf(
-            NodeList::class,
+        self::assertCount(
+            1,
             Parser::argumentsDefinition('(foo: Int!)')
         );
 
-        self::assertInstanceOf(
-            NodeList::class,
+        self::assertCount(
+            2,
             Parser::directiveLocations('| INPUT_OBJECT | OBJECT')
         );
 
-        self::assertInstanceOf(
-            NodeList::class,
+        self::assertCount(
+            2,
             Parser::implementsInterfaces('implements Foo & Bar')
         );
 
-        self::assertInstanceOf(
-            NodeList::class,
+        self::assertCount(
+            2,
             Parser::unionMemberTypes('= | Foo | Bar')
         );
 

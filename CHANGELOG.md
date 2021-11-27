@@ -26,6 +26,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Require lazy type loader to return `Type` directly without an intermediary callable
 - Rename `ServerConfig` option `persistentQueryLoader` to `persistedQueryLoader`
 - Call previously unused methods `EnumType::parseValue()` and `EnumType::parseLiteral()`
+- Strongly type `PromiseAdapter::createRejected()` to require `\Throwable`
 
 ### Added
 
@@ -77,6 +78,14 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove alias `GraphQL\Validator\Rules\AbstractValidationRule`, use `GraphQL\Validator\Rules\ValidationRule`
 - Remove `OperationParams` method `getOriginalInput()` in favor of public property `$originalInput`
 - Remove `OperationParams` method `isReadOnly()` in favor of public property `$readOnly`
+- Remove `Utils::withErrorHandling()`
+- Remove `TypeComparators::doTypesOverlap()`
+
+## 14.11.3
+
+### Fixed
+
+- Fix compatibility of more methods with native return type in PHP 8.1
 
 ## 14.11.2
 
