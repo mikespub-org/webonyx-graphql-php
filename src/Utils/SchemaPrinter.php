@@ -16,6 +16,7 @@ use GraphQL\Type\Definition\ImplementingType;
 use GraphQL\Type\Definition\InputObjectField;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\InterfaceType;
+use GraphQL\Type\Definition\NamedType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ScalarType;
 use GraphQL\Type\Definition\Type;
@@ -57,12 +58,8 @@ class SchemaPrinter
     {
         return static::printFilteredSchema(
             $schema,
-            static function (Directive $directive): bool {
-                return ! Directive::isSpecifiedDirective($directive);
-            },
-            static function (Type $type): bool {
-                return ! Type::isBuiltInType($type);
-            },
+            static fn (Directive $directive): bool => ! Directive::isSpecifiedDirective($directive),
+            static fn (NamedType $type): bool => ! $type->isBuiltInType(),
             $options
         );
     }
@@ -118,7 +115,7 @@ class SchemaPrinter
 
     /**
      * @param callable(Directive  $directive): bool $directiveFilter
-     * @param callable(Type       $type):      bool $typeFilter
+     * @param callable(Type       &NamedType   $type):      bool $typeFilter
      * @param array<string, bool> $options
      * @phpstan-param Options $options
      */
@@ -333,13 +330,13 @@ class SchemaPrinter
         $fields = array_values($type->getFields());
         $fields = array_map(
             static function (FieldDefinition $f, int $i) use ($options): string {
-                return static::printDescription($options, $f, '  ', $i === 0) .
-                    '  ' .
-                    $f->name .
-                    static::printArgs($options, $f->args, '  ') .
-                    ': ' .
-                    (string) $f->getType() .
-                    static::printDeprecated($f);
+                return static::printDescription($options, $f, '  ', $i === 0)
+                    . '  '
+                    . $f->name
+                    . static::printArgs($options, $f->args, '  ')
+                    . ': '
+                    . $f->getType()->toString()
+                    . static::printDeprecated($f);
             },
             $fields,
             array_keys($fields)
@@ -436,18 +433,19 @@ class SchemaPrinter
      */
     protected static function printInputObject(InputObjectType $type, array $options): string
     {
-        $fields = array_values($type->getFields());
-        $fields = array_map(
-            static function ($f, $i) use ($options): string {
-                return static::printDescription($options, $f, '  ', ! $i) . '  ' . static::printInputValue($f);
-            },
-            $fields,
-            array_keys($fields)
-        );
+        $fields       = [];
+        $firstInBlock = true;
 
-        return static::printDescription($options, $type) .
-            sprintf('input %s', $type->name) .
-            static::printBlock($fields);
+        foreach ($type->getFields() as $field) {
+            $fields[]     = static::printDescription($options, $field, '  ', $firstInBlock)
+                . '  '
+                . static::printInputValue($field);
+            $firstInBlock = false;
+        }
+
+        return static::printDescription($options, $type)
+            . "input {$type->name}"
+            . static::printBlock($fields);
     }
 
     /**

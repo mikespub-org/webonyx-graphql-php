@@ -10,13 +10,21 @@ use GraphQL\Type\Schema;
 use GraphQL\Utils\Utils;
 
 use function array_key_exists;
-use function sprintf;
 
+/**
+ * @phpstan-type InputObjectFieldConfig array{
+ *   name: string,
+ *   defaultValue?: mixed,
+ *   description?: string|null,
+ *   type: (Type&InputType)|callable(): (Type&InputType),
+ *   astNode?: InputValueDefinitionNode|null,
+ * }
+ */
 class InputObjectField
 {
     public string $name;
 
-    /** @var mixed|null */
+    /** @var mixed */
     public $defaultValue;
 
     public ?string $description;
@@ -30,7 +38,7 @@ class InputObjectField
     public array $config;
 
     /**
-     * @param array<string, mixed> $config
+     * @phpstan-param InputObjectFieldConfig $config
      */
     public function __construct(array $config)
     {
@@ -52,8 +60,9 @@ class InputObjectField
             /**
              * @see it('rejects an Input Object type with incorrectly typed fields')
              */
+
              // @phpstan-ignore-next-line schema validation will catch a Type that is not an InputType
-            $this->type = Schema::resolveType($this->config['type']);
+            return $this->type = Schema::resolveType($this->config['type']);
         }
 
         return $this->type;
@@ -71,6 +80,8 @@ class InputObjectField
     }
 
     /**
+     * @param Type &NamedType $parentType
+     *
      * @throws InvariantViolation
      */
     public function assertValid(Type $parentType): void
@@ -80,27 +91,16 @@ class InputObjectField
             throw new InvariantViolation("{$parentType->name}.{$this->name}: {$error->getMessage()}");
         }
 
-        $type = $this->getType();
-        if ($type instanceof WrappingType) {
-            $type = $type->getWrappedType(true);
+        $type = Type::getNamedType($this->getType());
+
+        if (! $type instanceof InputType) {
+            $notInputType = Utils::printSafe($this->type);
+
+            throw new InvariantViolation("{$parentType->name}.{$this->name} field type must be Input Type but got: {$notInputType}");
         }
 
-        Utils::invariant(
-            $type instanceof InputType,
-            sprintf(
-                '%s.%s field type must be Input Type but got: %s',
-                $parentType->name,
-                $this->name,
-                Utils::printSafe($this->type)
-            )
-        );
-        Utils::invariant(
-            ! array_key_exists('resolve', $this->config),
-            sprintf(
-                '%s.%s field has a resolve property, but Input Types cannot define resolvers.',
-                $parentType->name,
-                $this->name
-            )
-        );
+        if (array_key_exists('resolve', $this->config)) {
+            throw new InvariantViolation("{$parentType->name}.{$this->name} field has a resolve property, but Input Types cannot define resolvers.");
+        }
     }
 }

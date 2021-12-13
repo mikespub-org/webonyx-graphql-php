@@ -31,7 +31,7 @@ use function count;
 use function json_encode;
 use function sprintf;
 
-class DefinitionTest extends TestCase
+final class DefinitionTest extends TestCase
 {
     use ArraySubsetAsserts;
 
@@ -64,9 +64,9 @@ class DefinitionTest extends TestCase
     public function setUp(): void
     {
         $this->objectType      = new ObjectType(['name' => 'Object', 'fields' => ['tmp' => Type::string()]]);
-        $this->interfaceType   = new InterfaceType(['name' => 'Interface']);
+        $this->interfaceType   = new InterfaceType(['name' => 'Interface', 'fields' => ['irrelevant' => Type::int()]]);
         $this->unionType       = new UnionType(['name' => 'Union', 'types' => [$this->objectType]]);
-        $this->enumType        = new EnumType(['name' => 'Enum']);
+        $this->enumType        = new EnumType(['name' => 'Enum', 'values' => ['IRRELEVANT']]);
         $this->inputObjectType = new InputObjectType(['name' => 'InputObject']);
 
         $this->objectWithIsTypeOf = new ObjectType([
@@ -226,9 +226,11 @@ class DefinitionTest extends TestCase
 
         self::assertEquals($this->blogSubscription, $schema->getSubscriptionType());
 
-        $sub = $this->blogSubscription->getField('articleSubscribe');
-        self::assertEquals($sub->getType(), $this->blogArticle);
-        self::assertEquals($sub->getType()->name, 'Article');
+        $sub     = $this->blogSubscription->getField('articleSubscribe');
+        $subType = $sub->getType();
+        self::assertInstanceOf(ObjectType::class, $subType);
+        self::assertEquals($subType, $this->blogArticle);
+        self::assertEquals($subType->name, 'Article');
         self::assertEquals($sub->name, 'articleSubscribe');
     }
 
@@ -603,11 +605,11 @@ class DefinitionTest extends TestCase
 
         $blogFieldReturnType = $user->getField('blogs')->getType();
         self::assertInstanceOf(NonNull::class, $blogFieldReturnType);
-        self::assertSame($blog, $blogFieldReturnType->getWrappedType(true));
+        self::assertSame($blog, $blogFieldReturnType->getInnermostType());
 
         $ownerFieldReturnType = $blog->getField('owner')->getType();
         self::assertInstanceOf(NonNull::class, $ownerFieldReturnType);
-        self::assertSame($user, $ownerFieldReturnType->getWrappedType(true));
+        self::assertSame($user, $ownerFieldReturnType->getInnermostType());
     }
 
     public function testInputObjectTypeAllowsRecursiveDefinitions(): void
@@ -798,11 +800,10 @@ class DefinitionTest extends TestCase
             'name'   => 'SomeObject',
             'fields' => [['field' => Type::string()]],
         ]);
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage(
-            'SomeObject fields must be an associative array with field names as keys or a ' .
-            'function which returns such an array.'
-        );
+
+        $this->expectExceptionObject(new InvariantViolation(
+            'SomeObject fields must be an associative array with field names as keys or a function which returns such an array.'
+        ));
         $objType->getFields();
     }
 
@@ -817,11 +818,10 @@ class DefinitionTest extends TestCase
                 return [['field' => Type::string()]];
             },
         ]);
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage(
-            'SomeObject fields must be an associative array with field names as keys or a ' .
-            'function which returns such an array.'
-        );
+
+        $this->expectExceptionObject(new InvariantViolation(
+            'SomeObject fields must be an associative array with field names as keys or a function which returns such an array.'
+        ));
         $objType->getFields();
     }
 
@@ -846,30 +846,6 @@ class DefinitionTest extends TestCase
         ]);
         // Should not throw:
         $objType->assertValid();
-    }
-
-    // rejects an Object type with incorrectly typed field args
-
-    /**
-     * @see it('does not allow isDeprecated without deprecationReason on field')
-     */
-    public function testDoesNotAllowIsDeprecatedWithoutDeprecationReasonOnField(): void
-    {
-        $OldObject = new ObjectType([
-            'name'   => 'OldObject',
-            'fields' => [
-                'field' => [
-                    'type'         => Type::string(),
-                    'isDeprecated' => true,
-                ],
-            ],
-        ]);
-
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage(
-            'OldObject.field should provide "deprecationReason" instead of "isDeprecated".'
-        );
-        $OldObject->assertValid();
     }
 
     // Object interfaces must be array
@@ -912,9 +888,9 @@ class DefinitionTest extends TestCase
         ]);
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage(
-            'SomeObject interfaces must be an Array or a callable which returns an Array.'
+            'SomeObject interfaces must be an iterable or a callable which returns an iterable.'
         );
-        $objType->getInterfaces();
+        $objType->assertValid();
     }
 
     /**
@@ -922,6 +898,7 @@ class DefinitionTest extends TestCase
      */
     public function testRejectsAnObjectTypeWithInterfacesAsAFunctionReturningAnIncorrectType(): void
     {
+        // @phpstan-ignore-next-line intentionally wrong
         $objType = new ObjectType([
             'name'       => 'SomeObject',
             'interfaces' => static function (): stdClass {
@@ -931,9 +908,9 @@ class DefinitionTest extends TestCase
         ]);
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage(
-            'SomeObject interfaces must be an Array or a callable which returns an Array.'
+            'SomeObject interfaces must be an iterable or a callable which returns an iterable.'
         );
-        $objType->getInterfaces();
+        $objType->assertValid();
     }
 
     // Type System: Object fields must have valid resolve values
@@ -1059,9 +1036,9 @@ class DefinitionTest extends TestCase
         ]);
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage(
-            'AnotherInterface interfaces must be an Array or a callable which returns an Array.'
+            'AnotherInterface interfaces must be an iterable or a callable which returns an iterable.'
         );
-        $objType->getInterfaces();
+        $objType->assertValid();
     }
 
     /**
@@ -1069,6 +1046,7 @@ class DefinitionTest extends TestCase
      */
     public function testRejectsAnInterfaceTypeWithInterfacesAsAFunctionReturningAnIncorrectType(): void
     {
+        // @phpstan-ignore-next-line intentionally wrong
         $objType = new ObjectType([
             'name'       => 'AnotherInterface',
             'interfaces' => static function (): stdClass {
@@ -1078,9 +1056,9 @@ class DefinitionTest extends TestCase
         ]);
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage(
-            'AnotherInterface interfaces must be an Array or a callable which returns an Array.'
+            'AnotherInterface interfaces must be an iterable or a callable which returns an iterable.'
         );
-        $objType->getInterfaces();
+        $objType->assertValid();
     }
 
     private function schemaWithFieldType($type)
@@ -1144,10 +1122,10 @@ class DefinitionTest extends TestCase
      */
     public function testRejectsAnInterfaceTypeWithAnIncorrectTypeForResolveType(): void
     {
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage(
-            'AnotherInterface must provide "resolveType" as a function, but got: instance of stdClass'
-        );
+        // Slightly deviating from the reference implementation in order to be idiomatic for PHP
+        $this->expectExceptionObject(new InvariantViolation(
+            'AnotherInterface must provide "resolveType" as a callable, but got: instance of stdClass'
+        ));
 
         $type = new InterfaceType([
             'name'        => 'AnotherInterface',
@@ -1209,10 +1187,10 @@ class DefinitionTest extends TestCase
      */
     public function testRejectsAnUnionTypeWithAnIncorrectTypeForResolveType(): void
     {
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage(
-            'SomeUnion must provide "resolveType" as a function, but got: instance of stdClass'
-        );
+        // Slightly deviating from the reference implementation in order to be idiomatic for PHP
+        $this->expectExceptionObject(new InvariantViolation(
+            'SomeUnion must provide "resolveType" as a callable, but got: instance of stdClass'
+        ));
         $this->schemaWithFieldType(
             new UnionType([
                 'name'        => 'SomeUnion',
@@ -1253,6 +1231,7 @@ class DefinitionTest extends TestCase
             'functions are also provided.'
         );
         $this->schemaWithFieldType(
+            // @phpstan-ignore-next-line intentionally wrong
             new CustomScalarType(['name' => 'SomeScalar'])
         );
     }
@@ -1378,10 +1357,10 @@ class DefinitionTest extends TestCase
      */
     public function testRejectsAnObjectTypeWithAnIncorrectTypeForIsTypeOf(): void
     {
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage(
-            'AnotherObject must provide "isTypeOf" as a function, but got: instance of stdClass'
-        );
+        // Slightly deviating from the reference implementation in order to be idiomatic for PHP
+        $this->expectExceptionObject(new InvariantViolation(
+            'AnotherObject must provide "isTypeOf" as a callable, but got: instance of stdClass'
+        ));
         $this->schemaWithFieldType(
             new ObjectType([
                 'name'     => 'AnotherObject',
@@ -1431,9 +1410,10 @@ class DefinitionTest extends TestCase
     {
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage(
-            'Must provide Array of types or a callable which returns such an array for Union SomeUnion'
+            'Must provide iterable of types or a callable which returns such an iterable for Union SomeUnion'
         );
         $this->schemaWithFieldType(
+            // @phpstan-ignore-next-line intentionally wrong
             new UnionType(['name' => 'SomeUnion'])
         );
     }
@@ -1445,7 +1425,7 @@ class DefinitionTest extends TestCase
     {
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage(
-            'Must provide Array of types or a callable which returns such an array for Union SomeUnion'
+            'Must provide iterable of types or a callable which returns such an iterable for Union SomeUnion'
         );
         $this->schemaWithFieldType(
             new UnionType([
@@ -1519,15 +1499,15 @@ class DefinitionTest extends TestCase
      */
     public function testRejectsAnInputObjectTypeWithIncorrectFields(): void
     {
+        // @phpstan-ignore-next-line intentionally wrong
         $inputObjType = new InputObjectType([
             'name'   => 'SomeInputObject',
-            'fields' => [],
+            'fields' => new stdClass(),
         ]);
 
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage(
-            'SomeInputObject fields must be an associative array with field names as keys or a callable ' .
-            'which returns such an array.'
+            'SomeInputObject fields must be an iterable or a callable which returns an iterable.'
         );
         $inputObjType->assertValid();
     }
@@ -1537,17 +1517,15 @@ class DefinitionTest extends TestCase
      */
     public function testRejectsAnInputObjectTypeWithFieldsFunctionThatReturnsIncorrectType(): void
     {
+        // @phpstan-ignore-next-line intentionally wrong
         $inputObjType = new InputObjectType([
             'name'   => 'SomeInputObject',
-            'fields' => static function (): array {
-                return [];
-            },
+            'fields' => static fn () => null,
         ]);
 
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage(
-            'SomeInputObject fields must be an associative array with field names as keys or a ' .
-            'callable which returns such an array.'
+            'SomeInputObject fields must be an iterable or a callable which returns an iterable.'
         );
         $inputObjType->assertValid();
     }
@@ -1711,6 +1689,7 @@ class DefinitionTest extends TestCase
      */
     public function testRejectsAnEnumTypeWithIncorrectlyTypedValues(): void
     {
+        // @phpstan-ignore-next-line intentionally wrong
         $enumType = new EnumType([
             'name'   => 'SomeEnum',
             'values' => [['FOO' => 10]],
@@ -1719,25 +1698,6 @@ class DefinitionTest extends TestCase
         $this->expectExceptionObject(new InvariantViolation(
             'SomeEnum values must be an array with value names as keys or values.'
         ));
-        $enumType->assertValid();
-    }
-
-    /**
-     * @see it('does not allow isDeprecated without deprecationReason on enum')
-     */
-    public function testDoesNotAllowIsDeprecatedWithoutDeprecationReasonOnEnum(): void
-    {
-        $enumType = new EnumType([
-            'name'   => 'SomeEnum',
-            'values' => [
-                'FOO' => ['isDeprecated' => true],
-            ],
-        ]);
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage(
-            'SomeEnum.FOO should provide "deprecationReason" instead ' .
-            'of "isDeprecated".'
-        );
         $enumType->assertValid();
     }
 

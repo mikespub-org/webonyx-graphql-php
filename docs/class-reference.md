@@ -253,6 +253,8 @@ static function isAbstractType($type): bool
 
 ```php
 /**
+ * @return Type&NullableType
+ *
  * @api
  */
 static function getNullableType(GraphQL\Type\Definition\Type $type): GraphQL\Type\Definition\Type
@@ -1270,16 +1272,26 @@ Represents both - result of successful execution and of a failed one
 (with errors collected in `errors` prop)
 
 Could be converted to [spec-compliant](https://facebook.github.io/graphql/#sec-Response-Format)
-serializable array using `toArray()`
+serializable array using `toArray()`.
+
+@phpstan-type SerializableError array<string, mixed>
+@phpstan-type SerializableErrors array<int, SerializableError>
+@phpstan-type SerializableResult array{
+data?: array<string, mixed>,
+errors?: SerializableErrors,
+extensions?: array<string, mixed>,
+}
+@phpstan-type ErrorFormatter callable(Throwable): SerializableError
+@phpstan-type ErrorsHandler callable(array<Error> $errors, ErrorFormatter $formatter): SerializableErrors
 
 ### GraphQL\Executor\ExecutionResult Props
 
 ```php
 /**
- * Data collected from resolvers during query execution
+ * Data collected from resolvers during query execution.
  *
  * @api
- * @var mixed[]
+ * @var array<string, mixed>|null
  */
 public $data;
 
@@ -1290,16 +1302,15 @@ public $data;
  * contain original exception.
  *
  * @api
- * @var Error[]
+ * @var array<Error>
  */
 public $errors;
 
 /**
  * User-defined serializable array of extensions included in serialized result.
- * Conforms to
  *
  * @api
- * @var mixed[]
+ * @var array<string, mixed>|null
  */
 public $extensions;
 ```
@@ -1320,6 +1331,8 @@ public $extensions;
  *    // ... other keys
  * );
  *
+ * @phpstan-param ErrorFormatter|null $errorFormatter
+ *
  * @api
  */
 function setErrorFormatter(callable $errorFormatter): self
@@ -1336,9 +1349,11 @@ function setErrorFormatter(callable $errorFormatter): self
  *     return array_map($formatter, $errors);
  * }
  *
+ * @phpstan-param ErrorsHandler|null $errorsHandler
+ *
  * @api
  */
-function setErrorsHandler(callable $handler): self
+function setErrorsHandler(callable $errorsHandler): self
 ```
 
 ```php
@@ -1351,7 +1366,7 @@ function setErrorsHandler(callable $handler): self
  *
  * $debug argument must sum of flags from @see \GraphQL\Error\DebugFlag
  *
- * @return mixed[]
+ * @phpstan-return SerializableResult
  *
  * @api
  */
@@ -1502,16 +1517,19 @@ static function allRules(): array
  *
  * $rule = DocumentValidator::getRule(GraphQL\Validator\Rules\QueryComplexity::class);
  *
- * @param string $name
+ * @param class-string<T> $name
  *
+ * @return T|null
+ *
+ * @template T of ValidationRule
  * @api
  */
-static function getRule($name): GraphQL\Validator\Rules\ValidationRule
+static function getRule(string $name): GraphQL\Validator\Rules\ValidationRule
 ```
 
 ```php
 /**
- * Add rule to list of global validation rules
+ * Add rule to list of global validation rules.
  *
  * @api
  */
@@ -1675,6 +1693,7 @@ locations?: array<int, array{line: int, column: int}>,
 path?: array<int, int|string>,
 extensions?: array<string, mixed>,
 }
+@phpstan-import-type ErrorFormatter from ExecutionResult
 
 ### GraphQL\Error\FormattedError Methods
 
@@ -1871,6 +1890,8 @@ Usage example:
 @phpstan-type PersistedQueryLoader callable(string $queryId, OperationParams $operation): (string|DocumentNode)
 @phpstan-type RootValueResolver callable(OperationParams $operation, DocumentNode $doc, string $operationType): mixed
 @phpstan-type ValidationRulesOption array<ValidationRule>|(callable(OperationParams $operation, DocumentNode $doc, string $operationType): array<ValidationRule>)|null
+@phpstan-import-type ErrorsHandler from ExecutionResult
+@phpstan-import-type ErrorFormatter from ExecutionResult
 
 ### GraphQL\Server\ServerConfig Methods
 
@@ -1914,7 +1935,7 @@ function setRootValue($rootValue): self
 
 ```php
 /**
- * @param callable(Error): array<string, mixed> $errorFormatter
+ * @phpstan-param ErrorFormatter $errorFormatter
  *
  * @api
  */
@@ -1923,7 +1944,7 @@ function setErrorFormatter(callable $errorFormatter): self
 
 ```php
 /**
- * @param callable(array<int, Error> $errors, callable(Error): array<string, mixed> $formatter): array<int, array<string, mixed>> $handler
+ * @phpstan-param ErrorsHandler $handler
  *
  * @api
  */
