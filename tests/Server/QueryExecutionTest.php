@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GraphQL\Tests\Server;
 
+use function count;
 use DMS\PHPUnitExtensions\ArraySubset\ArraySubsetAsserts;
 use Exception;
 use GraphQL\Error\DebugFlag;
@@ -19,10 +20,8 @@ use GraphQL\Server\ServerConfig;
 use GraphQL\Validator\DocumentValidator;
 use GraphQL\Validator\Rules\CustomValidationRule;
 use GraphQL\Validator\ValidationContext;
-use stdClass;
-
-use function count;
 use function sprintf;
+use stdClass;
 
 class QueryExecutionTest extends ServerTestCase
 {
@@ -32,7 +31,7 @@ class QueryExecutionTest extends ServerTestCase
 
     public function setUp(): void
     {
-        $schema       = $this->buildSchema();
+        $schema = $this->buildSchema();
         $this->config = ServerConfig::create()
             ->setSchema($schema);
     }
@@ -48,7 +47,11 @@ class QueryExecutionTest extends ServerTestCase
         $this->assertQueryResultEquals($expected, $query);
     }
 
-    private function assertQueryResultEquals($expected, $query, $variables = null, $queryId = null)
+    /**
+     * @param array<string, mixed>      $expected
+     * @param array<string, mixed>|null $variables
+     */
+    private function assertQueryResultEquals(array $expected, string $query, ?array $variables = null, ?string $queryId = null): ExecutionResult
     {
         $result = $this->executeQuery($query, $variables, false, $queryId);
         self::assertArraySubset($expected, $result->toArray(DebugFlag::INCLUDE_DEBUG_MESSAGE));
@@ -56,14 +59,21 @@ class QueryExecutionTest extends ServerTestCase
         return $result;
     }
 
-    private function executeQuery($query, $variables = null, $readonly = false, $queryId = null)
+    /**
+     * @param array<string, mixed>|null $variables
+     */
+    private function executeQuery(string $query, ?array $variables = null, bool $readonly = false, ?string $queryId = null): ExecutionResult
     {
-        $op     = OperationParams::create(['query' => $query, 'variables' => $variables, 'queryId' => $queryId], $readonly);
-        $helper = new Helper();
-        $result = $helper->executeOperation($this->config, $op);
-        self::assertInstanceOf(ExecutionResult::class, $result);
+        $op = OperationParams::create(
+            [
+                'query' => $query,
+                'variables' => $variables,
+                'queryId' => $queryId,
+            ],
+            $readonly
+        );
 
-        return $result;
+        return (new Helper())->executeOperation($this->config, $op);
     }
 
     public function testReturnsSyntaxErrors(): void
@@ -94,7 +104,7 @@ class QueryExecutionTest extends ServerTestCase
         $expected = [
             'data' => [
                 'fieldWithSafeException' => null,
-                'f1'                 => 'f1',
+                'f1' => 'f1',
             ],
             'errors' => [
                 [
@@ -126,7 +136,7 @@ class QueryExecutionTest extends ServerTestCase
     public function testPassesRootValueAndContext(): void
     {
         $rootValue = 'myRootValue';
-        $context   = new stdClass();
+        $context = new stdClass();
 
         $this->config
             ->setContext($context)
@@ -146,13 +156,13 @@ class QueryExecutionTest extends ServerTestCase
     public function testPassesVariables(): void
     {
         $variables = ['a' => 'a', 'b' => 'b'];
-        $query     = '
+        $query = '
             query ($a: String!, $b: String!) {
                 a: fieldWithArg(arg: $a)
                 b: fieldWithArg(arg: $b)
             }
         ';
-        $expected  = [
+        $expected = [
             'data' => [
                 'a' => 'a',
                 'b' => 'b',
@@ -163,7 +173,7 @@ class QueryExecutionTest extends ServerTestCase
 
     public function testPassesCustomValidationRules(): void
     {
-        $query    = '
+        $query = '
             {nonExistentField}
         ';
         $expected = [
@@ -198,9 +208,9 @@ class QueryExecutionTest extends ServerTestCase
         $params = $doc = $operationType = null;
 
         $this->config->setValidationRules(static function ($p, $d, $o) use (&$called, &$params, &$doc, &$operationType): array {
-            $called        = true;
-            $params        = $p;
-            $doc           = $d;
+            $called = true;
+            $params = $p;
+            $doc = $d;
             $operationType = $o;
 
             return [];
@@ -216,8 +226,8 @@ class QueryExecutionTest extends ServerTestCase
 
     public function testAllowsDifferentValidationRulesDependingOnOperation(): void
     {
-        $q1      = '{f1}';
-        $q2      = '{invalid}';
+        $q1 = '{f1}';
+        $q2 = '{invalid}';
         $called1 = false;
         $called2 = false;
 
@@ -244,8 +254,8 @@ class QueryExecutionTest extends ServerTestCase
         self::assertTrue($called1);
         self::assertFalse($called2);
 
-        $called1  = false;
-        $called2  = false;
+        $called1 = false;
+        $called2 = false;
         $expected = ['errors' => [['message' => 'This is the error we are looking for!']]];
         $this->assertQueryResultEquals($expected, $q2);
         self::assertFalse($called1);
@@ -255,7 +265,7 @@ class QueryExecutionTest extends ServerTestCase
     public function testAllowsSkippingValidation(): void
     {
         $this->config->setValidationRules([]);
-        $query    = '{nonExistentField}';
+        $query = '{nonExistentField}';
         $expected = ['data' => []];
         $this->assertQueryResultEquals($expected, $query);
     }
@@ -272,14 +282,17 @@ class QueryExecutionTest extends ServerTestCase
         self::assertEquals($expected, $result->toArray());
     }
 
-    private function executePersistedQuery($queryId, $variables = null)
+    /**
+     * @param array<string, mixed>|null $variables
+     */
+    private function executePersistedQuery(string $queryId, ?array $variables = null): ExecutionResult
     {
-        $op     = OperationParams::create(['queryId' => $queryId, 'variables' => $variables]);
-        $helper = new Helper();
-        $result = $helper->executeOperation($this->config, $op);
-        self::assertInstanceOf(ExecutionResult::class, $result);
+        $op = OperationParams::create([
+            'queryId' => $queryId,
+            'variables' => $variables,
+        ]);
 
-        return $result;
+        return (new Helper())->executeOperation($this->config, $op);
     }
 
     public function testBatchedQueriesAreDisabledByDefault(): void
@@ -379,8 +392,8 @@ class QueryExecutionTest extends ServerTestCase
         $this->config->setPersistedQueryLoader(static fn (): array => ['err' => 'err']);
 
         $this->expectExceptionObject(new InvariantViolation(
-            'Persisted query loader must return query string or instance of GraphQL\Language\AST\DocumentNode ' .
-            'but got: {"err":"err"}'
+            'Persisted query loader must return query string or instance of GraphQL\Language\AST\DocumentNode '
+            . 'but got: {"err":"err"}'
         ));
         $this->executePersistedQuery('some-id');
     }
@@ -388,11 +401,11 @@ class QueryExecutionTest extends ServerTestCase
     public function testPersistedQueriesAreStillValidatedByDefault(): void
     {
         $this->config->setPersistedQueryLoader(static fn (): string => '{ invalid }');
-        $result   = $this->executePersistedQuery('some-id');
+        $result = $this->executePersistedQuery('some-id');
         $expected = [
             'errors' => [
                 [
-                    'message'   => 'Cannot query field "invalid" on type "Query".',
+                    'message' => 'Cannot query field "invalid" on type "Query".',
                     'locations' => [['line' => 1, 'column' => 3]],
                 ],
             ],
@@ -404,31 +417,31 @@ class QueryExecutionTest extends ServerTestCase
     {
         $this->config
             ->setPersistedQueryLoader(static function ($queryId) {
-                if ($queryId === 'some-id') {
+                if ('some-id' === $queryId) {
                     return '{invalid}';
                 }
 
                 return '{invalid2}';
             })
             ->setValidationRules(static function (OperationParams $params): array {
-                if ($params->queryId === 'some-id') {
+                if ('some-id' === $params->queryId) {
                     return [];
                 }
 
                 return DocumentValidator::allRules();
             });
 
-        $result   = $this->executePersistedQuery('some-id');
+        $result = $this->executePersistedQuery('some-id');
         $expected = [
             'data' => [],
         ];
         self::assertEquals($expected, $result->toArray());
 
-        $result   = $this->executePersistedQuery('some-other-id');
+        $result = $this->executePersistedQuery('some-other-id');
         $expected = [
             'errors' => [
                 [
-                    'message'   => 'Cannot query field "invalid2" on type "Query".',
+                    'message' => 'Cannot query field "invalid2" on type "Query".',
                     'locations' => [['line' => 1, 'column' => 2]],
                 ],
             ],
@@ -469,7 +482,7 @@ class QueryExecutionTest extends ServerTestCase
             ['query' => '{invalid}'],
             ['query' => '{f1,fieldWithSafeException}'],
             [
-                'query'     => '
+                'query' => '
                     query ($a: String!, $b: String!) {
                         a: fieldWithArg(arg: $a)
                         b: fieldWithArg(arg: $b)
@@ -524,7 +537,7 @@ class QueryExecutionTest extends ServerTestCase
                 'buffer' => static function ($num) use (&$calls): void {
                     $calls[] = sprintf('buffer: %d', $num);
                 },
-                'load'   => static function ($num) use (&$calls): string {
+                'load' => static function ($num) use (&$calls): string {
                     $calls[] = sprintf('load: %d', $num);
 
                     return sprintf('loaded: %d', $num);
@@ -562,7 +575,7 @@ class QueryExecutionTest extends ServerTestCase
 
     public function testValidatesParamsBeforeExecution(): void
     {
-        $op     = OperationParams::create(['queryBad' => '{f1}']);
+        $op = OperationParams::create(['queryBad' => '{f1}']);
         $helper = new Helper();
         $result = $helper->executeOperation($this->config, $op);
         self::assertInstanceOf(ExecutionResult::class, $result);
@@ -587,9 +600,9 @@ class QueryExecutionTest extends ServerTestCase
         $params = $doc = $operationType = null;
 
         $this->config->setContext(static function ($p, $d, $o) use (&$called, &$params, &$doc, &$operationType): void {
-            $called        = true;
-            $params        = $p;
-            $doc           = $d;
+            $called = true;
+            $params = $p;
+            $doc = $d;
             $operationType = $o;
         });
 
@@ -607,9 +620,9 @@ class QueryExecutionTest extends ServerTestCase
         $params = $doc = $operationType = null;
 
         $this->config->setRootValue(static function ($p, $d, $o) use (&$called, &$params, &$doc, &$operationType): void {
-            $called        = true;
-            $params        = $p;
-            $doc           = $d;
+            $called = true;
+            $params = $p;
+            $doc = $d;
             $operationType = $o;
         });
 
@@ -624,10 +637,10 @@ class QueryExecutionTest extends ServerTestCase
     public function testAppliesErrorFormatter(): void
     {
         $called = false;
-        $error  = null;
+        $error = null;
         $this->config->setErrorFormatter(static function ($e) use (&$called, &$error): array {
             $called = true;
-            $error  = $e;
+            $error = $e;
 
             return ['test' => 'formatted'];
         });
@@ -635,7 +648,7 @@ class QueryExecutionTest extends ServerTestCase
         $result = $this->executeQuery('{fieldWithSafeException}');
         self::assertFalse($called);
         $formatted = $result->toArray();
-        $expected  = [
+        $expected = [
             'errors' => [
                 ['test' => 'formatted'],
             ],
@@ -646,10 +659,10 @@ class QueryExecutionTest extends ServerTestCase
 
         // Assert debugging still works even with custom formatter
         $formatted = $result->toArray(DebugFlag::INCLUDE_TRACE);
-        $expected  = [
+        $expected = [
             'errors' => [
                 [
-                    'test'  => 'formatted',
+                    'test' => 'formatted',
                     'extensions' => [
                         'trace' => [],
                     ],
@@ -661,12 +674,12 @@ class QueryExecutionTest extends ServerTestCase
 
     public function testAppliesErrorsHandler(): void
     {
-        $called    = false;
-        $errors    = null;
+        $called = false;
+        $errors = null;
         $formatter = null;
         $this->config->setErrorsHandler(static function ($e, $f) use (&$called, &$errors, &$formatter): array {
-            $called    = true;
-            $errors    = $e;
+            $called = true;
+            $errors = $e;
             $formatter = $f;
 
             return [
@@ -678,7 +691,7 @@ class QueryExecutionTest extends ServerTestCase
 
         self::assertFalse($called);
         $formatted = $result->toArray();
-        $expected  = [
+        $expected = [
             'errors' => [
                 ['test' => 'handled'],
             ],

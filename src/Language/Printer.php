@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace GraphQL\Language;
 
+use function array_filter;
+use function count;
 use GraphQL\Language\AST\ArgumentNode;
 use GraphQL\Language\AST\BooleanValueNode;
 use GraphQL\Language\AST\DirectiveDefinitionNode;
@@ -50,9 +52,6 @@ use GraphQL\Language\AST\UnionTypeExtensionNode;
 use GraphQL\Language\AST\VariableDefinitionNode;
 use GraphQL\Language\AST\VariableNode;
 use GraphQL\Utils\Utils;
-
-use function array_filter;
-use function count;
 use function implode;
 use function json_encode;
 use function str_replace;
@@ -95,15 +94,14 @@ class Printer
     /**
      * Recursively traverse an AST depth-first and produce a pretty string.
      */
-    public function printAST(Node $node)
+    public function printAST(Node $node): string
     {
         return $this->p($node);
     }
 
     protected function p(?Node $node, bool $isDescription = false): string
     {
-        $res = '';
-        if ($node === null) {
+        if (null === $node) {
             return '';
         }
 
@@ -123,7 +121,7 @@ class Printer
                 }
 
                 $noIndent = Utils::every($argStrings, static function (string $arg): bool {
-                    return strpos($arg, "\n") === false;
+                    return false === strpos($arg, "\n");
                 });
 
                 return $this->addDescription($node->description, 'directive @'
@@ -180,7 +178,7 @@ class Printer
                 }
 
                 $noIndent = Utils::every($argStrings, static function (string $arg): bool {
-                    return strpos($arg, "\n") === false;
+                    return false === strpos($arg, "\n");
                 });
 
                 return $this->addDescription(
@@ -350,15 +348,15 @@ class Printer
                 return '{' . $this->printList($node->fields, ', ') . '}';
 
             case $node instanceof OperationDefinitionNode:
-                $op           = $node->operation;
-                $name         = $this->p($node->name);
-                $varDefs      = $this->wrap('(', $this->printList($node->variableDefinitions, ', '), ')');
-                $directives   = $this->printList($node->directives, ' ');
+                $op = $node->operation;
+                $name = $this->p($node->name);
+                $varDefs = $this->wrap('(', $this->printList($node->variableDefinitions, ', '), ')');
+                $directives = $this->printList($node->directives, ' ');
                 $selectionSet = $this->p($node->selectionSet);
 
                 // Anonymous queries with no directives or variable definitions can use
                 // the query short form.
-                return (strlen($name) === 0) && (strlen($directives) === 0) && ! $varDefs && $op === 'query'
+                return (0 === strlen($name)) && (0 === strlen($directives)) && '' === $varDefs && 'query' === $op
                     ? $selectionSet
                     : $this->join([$op, $this->join([$name, $varDefs]), $directives, $selectionSet], ' ');
 
@@ -453,10 +451,15 @@ class Printer
                 return '$' . $this->p($node->name);
         }
 
-        return $res;
+        return '';
     }
 
-    protected function printList(NodeList $list, $separator = ''): string
+    /**
+     * @param NodeList<TNode> $list
+     *
+     * @template TNode of Node
+     */
+    protected function printList(NodeList $list, string $separator = ''): string
     {
         $parts = [];
         foreach ($list as $item) {
@@ -468,10 +471,14 @@ class Printer
 
     /**
      * Print each item on its own line, wrapped in an indented "{ }" block.
+     *
+     * @param NodeList<TNode> $list
+     *
+     * @template TNode of Node
      */
     protected function printListBlock(NodeList $list): string
     {
-        if (count($list) === 0) {
+        if (0 === count($list)) {
             return '';
         }
 
@@ -492,9 +499,9 @@ class Printer
      * If maybeString is not null or empty, then wrap with start and end, otherwise
      * print an empty string.
      */
-    protected function wrap(string $start, ?string $maybeString, string $end = '')
+    protected function wrap(string $start, ?string $maybeString, string $end = ''): string
     {
-        if ($maybeString === null || $maybeString === '') {
+        if (null === $maybeString || '' === $maybeString) {
             return '';
         }
 
@@ -503,7 +510,7 @@ class Printer
 
     protected function indent(string $string): string
     {
-        if ($string === '') {
+        if ('' === $string) {
             return '';
         }
 

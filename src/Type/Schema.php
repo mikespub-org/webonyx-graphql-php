@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GraphQL\Type;
 
 use Generator;
+use function get_class;
 use GraphQL\Error\Error;
 use GraphQL\Error\InvariantViolation;
 use GraphQL\GraphQL;
@@ -21,17 +22,15 @@ use GraphQL\Type\Definition\UnionType;
 use GraphQL\Utils\InterfaceImplementations;
 use GraphQL\Utils\TypeInfo;
 use GraphQL\Utils\Utils;
-use InvalidArgumentException;
-
-use function get_class;
 use function implode;
+use InvalidArgumentException;
 use function is_array;
 use function is_callable;
 use function is_iterable;
 use function sprintf;
 
 /**
- * Schema Definition (see [schema definition docs](schema-definition.md))
+ * Schema Definition (see [schema definition docs](schema-definition.md)).
  *
  * A Schema is created by supplying the root types of each type of operation:
  * query, mutation (optional) and subscription (optional). A schema definition is
@@ -55,7 +54,7 @@ class Schema
     private SchemaConfig $config;
 
     /**
-     * Contains currently resolved schema types
+     * Contains currently resolved schema types.
      *
      * @var array<string, Type&NamedType>
      */
@@ -96,24 +95,24 @@ class Schema
             $this->validationErrors = [];
         }
 
-        $this->config            = $config;
+        $this->config = $config;
         $this->extensionASTNodes = $config->extensionASTNodes;
 
         // TODO can we make the following assumption hold true?
         // No need to check for the existence of the root query type
         // since we already validated the schema thus it must exist.
         $query = $config->query;
-        if ($query !== null) {
+        if (null !== $query) {
             $this->resolvedTypes[$query->name] = $query;
         }
 
         $mutation = $config->mutation;
-        if ($mutation !== null) {
+        if (null !== $mutation) {
             $this->resolvedTypes[$mutation->name] = $mutation;
         }
 
         $subscription = $config->subscription;
-        if ($subscription !== null) {
+        if (null !== $subscription) {
             $this->resolvedTypes[$subscription->name] = $subscription;
         }
 
@@ -130,7 +129,7 @@ class Schema
 
                 $this->resolvedTypes[$typeName] = $type;
             }
-        // @phpstan-ignore-next-line not strictly enforced until we can use actual union types
+            // @phpstan-ignore-next-line not strictly enforced until we can use actual union types
         } elseif (! is_callable($types)) {
             $invalidTypes = Utils::printSafe($types);
 
@@ -147,6 +146,9 @@ class Schema
         $this->getTypeMap();
     }
 
+    /**
+     * @return Generator<Type&NamedType>
+     */
     private function resolveAdditionalTypes(): Generator
     {
         $types = $this->config->types;
@@ -180,7 +182,7 @@ class Schema
     {
         if (! $this->fullyLoaded) {
             $this->resolvedTypes = $this->collectAllTypes();
-            $this->fullyLoaded   = true;
+            $this->fullyLoaded = true;
         }
 
         return $this->resolvedTypes;
@@ -217,7 +219,7 @@ class Schema
     }
 
     /**
-     * Returns a list of directives supported by this schema
+     * Returns a list of directives supported by this schema.
      *
      * @return array<Directive>
      *
@@ -226,6 +228,22 @@ class Schema
     public function getDirectives(): array
     {
         return $this->config->directives ?? GraphQL::getStandardDirectives();
+    }
+
+    /**
+     * @param mixed $typeLoaderReturn could be anything
+     */
+    public static function typeLoaderNotType($typeLoaderReturn): string
+    {
+        $typeClass = Type::class;
+        $notType = Utils::printSafe($typeLoaderReturn);
+
+        return "Type loader is expected to return an instanceof {$typeClass}, but it returned {$notType}";
+    }
+
+    public static function typeLoaderWrongTypeName(string $expectedTypeName, string $actualTypeName): string
+    {
+        return "Type loader is expected to return type {$expectedTypeName}, but it returned type {$actualTypeName}.";
     }
 
     public function getOperationType(string $operation): ?ObjectType
@@ -266,7 +284,7 @@ class Schema
     }
 
     /**
-     * Returns schema subscription
+     * Returns schema subscription.
      *
      * @api
      */
@@ -296,7 +314,7 @@ class Schema
             $type = Type::getStandardTypes()[$name]
                 ?? $this->loadType($name);
 
-            if ($type === null) {
+            if (null === $type) {
                 return null;
             }
 
@@ -308,7 +326,7 @@ class Schema
 
     public function hasType(string $name): bool
     {
-        return $this->getType($name) !== null;
+        return null !== $this->getType($name);
     }
 
     /**
@@ -318,25 +336,23 @@ class Schema
     {
         $typeLoader = $this->config->typeLoader;
 
-        if ($typeLoader === null) {
+        if (null === $typeLoader) {
             return $this->defaultTypeLoader($typeName);
         }
 
         $type = $typeLoader($typeName);
 
-        // @phpstan-ignore-next-line not strictly enforceable unless PHP gets function types
-        if (! $type instanceof Type) {
-            $notType = Utils::printSafe($type);
-
-            throw new InvariantViolation(
-                "Type loader is expected to return a callable or valid type \"$typeName\", but it returned {$notType}"
-            );
+        if (null === $type) {
+            return null;
         }
 
-        if ($type->name !== $typeName) {
-            throw new InvariantViolation(
-                'Type loader is expected to return type "' . $typeName . '", but it returned "' . $type->name . '"'
-            );
+        // @phpstan-ignore-next-line not strictly enforceable unless PHP gets function types
+        if (! $type instanceof Type) {
+            throw new InvariantViolation(self::typeLoaderNotType($type));
+        }
+
+        if ($typeName !== $type->name) {
+            throw new InvariantViolation(self::typeLoaderWrongTypeName($typeName, $type->name));
         }
 
         return $type;
@@ -370,7 +386,7 @@ class Schema
 
     /**
      * Returns all possible concrete types for given abstract type
-     * (implementations for interfaces and members of union type for unions)
+     * (implementations for interfaces and members of union type for unions).
      *
      * This operation requires full schema scan. Do not use in production environment.
      *
@@ -465,7 +481,7 @@ class Schema
     }
 
     /**
-     * Returns instance of directive by name
+     * Returns instance of directive by name.
      *
      * @api
      */
@@ -498,7 +514,7 @@ class Schema
     {
         $errors = $this->validate();
 
-        if ($errors !== []) {
+        if ([] !== $errors) {
             throw new InvariantViolation(implode("\n\n", $this->validationErrors));
         }
 
@@ -511,7 +527,7 @@ class Schema
             $type->assertValid();
 
             // Make sure type loader returns the same instance as registered in other places of schema
-            if ($this->config->typeLoader === null) {
+            if (null === $this->config->typeLoader) {
                 continue;
             }
 

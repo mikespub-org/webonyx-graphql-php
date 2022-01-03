@@ -9,9 +9,9 @@ use GraphQL\Examples\Blog\Data\DataSource;
 use GraphQL\Examples\Blog\Data\User;
 use GraphQL\Examples\Blog\Type\Field\HtmlField;
 use GraphQL\Examples\Blog\Types;
+use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
-
 use function method_exists;
 use function ucfirst;
 
@@ -27,7 +27,7 @@ class CommentType extends ObjectType
                 'parent' => Types::comment(),
                 'isAnonymous' => Types::boolean(),
                 'replies' => [
-                    'type' => Types::listOf(Types::comment()),
+                    'type' => new ListOfType(Types::comment()),
                     'args' => [
                         'after' => Types::int(),
                         'limit' => [
@@ -64,7 +64,7 @@ class CommentType extends ObjectType
 
     public function resolveParent(Comment $comment): ?Comment
     {
-        if ($comment->parentId !== null) {
+        if (null !== $comment->parentId) {
             return DataSource::findComment($comment->parentId);
         }
 

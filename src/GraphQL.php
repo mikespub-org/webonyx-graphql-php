@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GraphQL;
 
+use function count;
 use GraphQL\Error\Error;
 use GraphQL\Executor\ExecutionResult;
 use GraphQL\Executor\Executor;
@@ -14,7 +15,6 @@ use GraphQL\Language\AST\DocumentNode;
 use GraphQL\Language\Parser;
 use GraphQL\Language\Source;
 use GraphQL\Type\Definition\Directive;
-use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\ScalarType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema as SchemaType;
@@ -22,11 +22,11 @@ use GraphQL\Validator\DocumentValidator;
 use GraphQL\Validator\Rules\QueryComplexity;
 use GraphQL\Validator\Rules\ValidationRule;
 
-use function count;
-
 /**
  * This is the primary facade for fulfilling GraphQL operations.
  * See [related documentation](executing-queries.md).
+ *
+ * @phpstan-import-type FieldResolver from Executor
  */
 class GraphQL
 {
@@ -67,11 +67,11 @@ class GraphQL
      *    Empty array would allow to skip query validation (may be convenient for persisted
      *    queries which are validated before persisting and assumed valid during execution)
      *
-     * @param string|DocumentNode $source
-     * @param mixed               $rootValue
-     * @param mixed               $contextValue
-     * @param mixed[]|null        $variableValues
-     * @param ValidationRule[]    $validationRules
+     * @param string|DocumentNode        $source
+     * @param mixed                      $rootValue
+     * @param mixed                      $contextValue
+     * @param array<string, mixed>|null  $variableValues
+     * @param array<ValidationRule>|null $validationRules
      *
      * @api
      */
@@ -80,7 +80,7 @@ class GraphQL
         $source,
         $rootValue = null,
         $contextValue = null,
-        $variableValues = null,
+        ?array $variableValues = null,
         ?string $operationName = null,
         ?callable $fieldResolver = null,
         ?array $validationRules = null
@@ -131,7 +131,7 @@ class GraphQL
                 : Parser::parse(new Source($source, 'GraphQL'));
 
             // TODO this could be more elegant
-            if (count($validationRules ?? []) === 0) {
+            if (0 === count($validationRules ?? [])) {
                 /** @var QueryComplexity $queryComplexity */
                 $queryComplexity = DocumentValidator::getRule(QueryComplexity::class);
                 $queryComplexity->setRawVariableValues($variableValues);
@@ -223,7 +223,7 @@ class GraphQL
     /**
      * Set default resolver implementation.
      *
-     * @param callable(mixed, array, mixed, ResolveInfo): mixed $fn
+     * @phpstan-param FieldResolver $fn
      *
      * @api
      */

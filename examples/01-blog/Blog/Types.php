@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace GraphQL\Examples\Blog;
 
+use function class_exists;
 use Closure;
+use function count;
 use Exception;
+use function explode;
 use GraphQL\Examples\Blog\Type\CommentType;
 use GraphQL\Examples\Blog\Type\Enum\ContentFormatType;
 use GraphQL\Examples\Blog\Type\Enum\ImageSizeType;
@@ -17,14 +20,8 @@ use GraphQL\Examples\Blog\Type\Scalar\UrlType;
 use GraphQL\Examples\Blog\Type\SearchResultType;
 use GraphQL\Examples\Blog\Type\StoryType;
 use GraphQL\Examples\Blog\Type\UserType;
-use GraphQL\Type\Definition\ListOfType;
-use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ScalarType;
 use GraphQL\Type\Definition\Type;
-
-use function class_exists;
-use function count;
-use function explode;
 use function lcfirst;
 use function method_exists;
 use function preg_replace;
@@ -109,7 +106,7 @@ final class Types
         $parts = explode('\\', $classname);
 
         $cacheName = strtolower(preg_replace('~Type$~', '', $parts[count($parts) - 1]));
-        $type      = null;
+        $type = null;
 
         if (! isset(self::$types[$cacheName])) {
             if (class_exists($classname)) {
@@ -131,7 +128,7 @@ final class Types
     public static function byTypeName(string $shortName): Type
     {
         $cacheName = strtolower($shortName);
-        $type      = null;
+        $type = null;
 
         if (isset(self::$types[$cacheName])) {
             return self::$types[$cacheName];
@@ -172,21 +169,5 @@ final class Types
     public static function string(): ScalarType
     {
         return Type::string();
-    }
-
-    /**
-     * @param Type|callable():Type $type
-     */
-    public static function listOf($type): ListOfType
-    {
-        return new ListOfType($type);
-    }
-
-    /**
-     * @param Type|callable():Type $type
-     */
-    public static function nonNull($type): NonNull
-    {
-        return new NonNull($type);
     }
 }

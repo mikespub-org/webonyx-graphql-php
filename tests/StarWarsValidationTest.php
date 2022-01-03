@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GraphQL\Tests;
 
+use GraphQL\Error\Error;
 use GraphQL\Language\Parser;
 use GraphQL\Validator\DocumentValidator;
 use PHPUnit\Framework\TestCase;
@@ -18,7 +19,7 @@ class StarWarsValidationTest extends TestCase
      */
     public function testValidatesAComplexButValidQuery(): void
     {
-        $query  = '
+        $query = '
         query NestedQueryWithFragment {
           hero {
             ...NameAndAppearances
@@ -42,12 +43,15 @@ class StarWarsValidationTest extends TestCase
 
     /**
      * Helper function to test a query and the expected response.
+     *
+     * @return array<int, Error>
      */
-    private function validationErrors($query)
+    private function validationErrors(string $query): array
     {
         $ast = Parser::parse($query);
+        $schema = StarWarsSchema::build();
 
-        return DocumentValidator::validate(StarWarsSchema::build(), $ast);
+        return DocumentValidator::validate($schema, $ast);
     }
 
     /**
@@ -55,7 +59,7 @@ class StarWarsValidationTest extends TestCase
      */
     public function testThatNonExistentFieldsAreInvalid(): void
     {
-        $query  = '
+        $query = '
         query HeroSpaceshipQuery {
           hero {
             favoriteSpaceship
@@ -86,7 +90,7 @@ class StarWarsValidationTest extends TestCase
      */
     public function testDisallowsFieldsOnScalars(): void
     {
-        $query  = '
+        $query = '
         query HeroFieldsOnScalarQuery {
           hero {
             name {
@@ -104,7 +108,7 @@ class StarWarsValidationTest extends TestCase
      */
     public function testDisallowsObjectFieldsOnInterfaces(): void
     {
-        $query  = '
+        $query = '
         query DroidFieldOnCharacter {
           hero {
             name
@@ -121,7 +125,7 @@ class StarWarsValidationTest extends TestCase
      */
     public function testAllowsObjectFieldsInFragments(): void
     {
-        $query  = '
+        $query = '
         query DroidFieldInFragment {
           hero {
             name
@@ -142,7 +146,7 @@ class StarWarsValidationTest extends TestCase
      */
     public function testAllowsObjectFieldsInInlineFragments(): void
     {
-        $query  = '
+        $query = '
         query DroidFieldInFragment {
           hero {
             name

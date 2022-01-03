@@ -14,7 +14,7 @@ class StarWarsQueryTest extends TestCase
      */
     public function testCorrectlyIdentifiesR2D2AsTheHeroOfTheStarWarsSaga(): void
     {
-        $query    = '
+        $query = '
         query HeroNameQuery {
           hero {
             name
@@ -29,8 +29,10 @@ class StarWarsQueryTest extends TestCase
 
     /**
      * Helper function to test a query and the expected response.
+     *
+     * @param array<string, mixed> $expected
      */
-    private static function assertValidQuery($query, $expected): void
+    private static function assertValidQuery(string $query, array $expected): void
     {
         self::assertEquals(
             ['data' => $expected],
@@ -45,7 +47,7 @@ class StarWarsQueryTest extends TestCase
      */
     public function testAllowsUsToQueryForTheIDAndFriendsOfR2D2(): void
     {
-        $query    = '
+        $query = '
         query HeroNameAndFriendsQuery {
           hero {
             id
@@ -58,8 +60,8 @@ class StarWarsQueryTest extends TestCase
         ';
         $expected = [
             'hero' => [
-                'id'      => '2001',
-                'name'    => 'R2-D2',
+                'id' => '2001',
+                'name' => 'R2-D2',
                 'friends' => [
                     ['name' => 'Luke Skywalker'],
                     ['name' => 'Han Solo'],
@@ -77,7 +79,7 @@ class StarWarsQueryTest extends TestCase
      */
     public function testAllowsUsToQueryForTheFriendsOfFriendsOfR2D2(): void
     {
-        $query    = '
+        $query = '
         query NestedQuery {
           hero {
             name
@@ -93,12 +95,12 @@ class StarWarsQueryTest extends TestCase
         ';
         $expected = [
             'hero' => [
-                'name'    => 'R2-D2',
+                'name' => 'R2-D2',
                 'friends' => [
                     [
-                        'name'      => 'Luke Skywalker',
+                        'name' => 'Luke Skywalker',
                         'appearsIn' => ['NEWHOPE', 'EMPIRE', 'JEDI'],
-                        'friends'   => [
+                        'friends' => [
                             ['name' => 'Han Solo'],
                             ['name' => 'Leia Organa'],
                             ['name' => 'C-3PO'],
@@ -106,24 +108,23 @@ class StarWarsQueryTest extends TestCase
                         ],
                     ],
                     [
-                        'name'      => 'Han Solo',
+                        'name' => 'Han Solo',
                         'appearsIn' => ['NEWHOPE', 'EMPIRE', 'JEDI'],
-                        'friends'   => [
+                        'friends' => [
                             ['name' => 'Luke Skywalker'],
                             ['name' => 'Leia Organa'],
                             ['name' => 'R2-D2'],
                         ],
                     ],
                     [
-                        'name'      => 'Leia Organa',
+                        'name' => 'Leia Organa',
                         'appearsIn' => ['NEWHOPE', 'EMPIRE', 'JEDI'],
-                        'friends'   =>
-                            [
-                                ['name' => 'Luke Skywalker'],
-                                ['name' => 'Han Solo'],
-                                ['name' => 'C-3PO'],
-                                ['name' => 'R2-D2'],
-                            ],
+                        'friends' => [
+                            ['name' => 'Luke Skywalker'],
+                            ['name' => 'Han Solo'],
+                            ['name' => 'C-3PO'],
+                            ['name' => 'R2-D2'],
+                        ],
                     ],
                 ],
             ],
@@ -136,7 +137,7 @@ class StarWarsQueryTest extends TestCase
      */
     public function testAllowsUsToQueryForLukeSkywalkerDirectlyUsingHisID(): void
     {
-        $query    = '
+        $query = '
         query FetchLukeQuery {
           human(id: "1000") {
             name
@@ -155,14 +156,14 @@ class StarWarsQueryTest extends TestCase
      */
     public function testGenericQueryToGetLukeSkywalkerById(): void
     {
-        $query    = '
+        $query = '
         query FetchSomeIDQuery($someId: String!) {
           human(id: $someId) {
             name
           }
         }
         ';
-        $params   = ['someId' => '1000'];
+        $params = ['someId' => '1000'];
         $expected = [
             'human' => ['name' => 'Luke Skywalker'],
         ];
@@ -172,8 +173,11 @@ class StarWarsQueryTest extends TestCase
 
     /**
      * Helper function to test a query with params and the expected response.
+     *
+     * @param array<string, mixed> $params
+     * @param array<string, mixed> $expected
      */
-    private static function assertValidQueryWithParams($query, $params, $expected): void
+    private static function assertValidQueryWithParams(string $query, array $params, array $expected): void
     {
         self::assertEquals(
             ['data' => $expected],
@@ -188,14 +192,14 @@ class StarWarsQueryTest extends TestCase
      */
     public function testGenericQueryToGetHanSoloById(): void
     {
-        $query    = '
+        $query = '
         query FetchSomeIDQuery($someId: String!) {
           human(id: $someId) {
             name
           }
         }
         ';
-        $params   = ['someId' => '1002'];
+        $params = ['someId' => '1002'];
         $expected = [
             'human' => ['name' => 'Han Solo'],
         ];
@@ -207,14 +211,14 @@ class StarWarsQueryTest extends TestCase
      */
     public function testGenericQueryWithInvalidId(): void
     {
-        $query    = '
+        $query = '
         query humanQuery($id: String!) {
           human(id: $id) {
             name
           }
         }
         ';
-        $params   = ['id' => 'not a valid id'];
+        $params = ['id' => 'not a valid id'];
         $expected = ['human' => null];
         self::assertValidQueryWithParams($query, $params, $expected);
     }
@@ -226,7 +230,7 @@ class StarWarsQueryTest extends TestCase
      */
     public function testLukeKeyAlias(): void
     {
-        $query    = '
+        $query = '
         query FetchLukeAliased {
           luke: human(id: "1000") {
             name
@@ -244,7 +248,7 @@ class StarWarsQueryTest extends TestCase
      */
     public function testTwoRootKeysAsAnAlias(): void
     {
-        $query    = '
+        $query = '
         query FetchLukeAndLeiaAliased {
           luke: human(id: "1000") {
             name
@@ -266,7 +270,7 @@ class StarWarsQueryTest extends TestCase
      */
     public function testQueryUsingDuplicatedContent(): void
     {
-        $query    = '
+        $query = '
         query DuplicateFields {
           luke: human(id: "1000") {
             name
@@ -280,11 +284,11 @@ class StarWarsQueryTest extends TestCase
         ';
         $expected = [
             'luke' => [
-                'name'       => 'Luke Skywalker',
+                'name' => 'Luke Skywalker',
                 'homePlanet' => 'Tatooine',
             ],
             'leia' => [
-                'name'       => 'Leia Organa',
+                'name' => 'Leia Organa',
                 'homePlanet' => 'Alderaan',
             ],
         ];
@@ -314,11 +318,11 @@ class StarWarsQueryTest extends TestCase
 
         $expected = [
             'luke' => [
-                'name'       => 'Luke Skywalker',
+                'name' => 'Luke Skywalker',
                 'homePlanet' => 'Tatooine',
             ],
             'leia' => [
-                'name'       => 'Leia Organa',
+                'name' => 'Leia Organa',
                 'homePlanet' => 'Alderaan',
             ],
         ];
@@ -330,7 +334,7 @@ class StarWarsQueryTest extends TestCase
      */
     public function testVerifyThatR2D2IsADroid(): void
     {
-        $query    = '
+        $query = '
         query CheckTypeOfR2 {
           hero {
             __typename
@@ -341,7 +345,7 @@ class StarWarsQueryTest extends TestCase
         $expected = [
             'hero' => [
                 '__typename' => 'Droid',
-                'name'       => 'R2-D2',
+                'name' => 'R2-D2',
             ],
         ];
         self::assertValidQuery($query, $expected);
@@ -364,7 +368,7 @@ class StarWarsQueryTest extends TestCase
         $expected = [
             'hero' => [
                 '__typename' => 'Human',
-                'name'       => 'Luke Skywalker',
+                'name' => 'Luke Skywalker',
             ],
         ];
 

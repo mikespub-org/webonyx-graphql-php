@@ -8,21 +8,16 @@ use GraphQL\Error\InvariantViolation;
 use GraphQL\Language\AST\InputObjectTypeDefinitionNode;
 use GraphQL\Language\AST\InputObjectTypeExtensionNode;
 use GraphQL\Utils\Utils;
-
 use function is_array;
 use function is_callable;
 use function is_iterable;
 use function is_string;
 
 /**
- * @phpstan-type PartialInputObjectFieldConfig array{
- *   name?: string,
- *   defaultValue?: mixed,
- *   description?: string|null,
- *   type: (Type&InputType)|callable(): (Type&InputType),
- *   astNode?: InputValueDefinitionNode|null,
- * }
- * @phpstan-type FieldConfig InputObjectField|(Type&InputType)|PartialInputObjectFieldConfig|(callable(): InputObjectField|(Type&InputType)|PartialInputObjectFieldConfig)
+ * @phpstan-import-type UnnamedInputObjectFieldConfig from InputObjectField
+ * @phpstan-type EagerFieldConfig InputObjectField|(Type&InputType)|UnnamedInputObjectFieldConfig
+ * @phpstan-type LazyFieldConfig callable(): EagerFieldConfig
+ * @phpstan-type FieldConfig EagerFieldConfig|LazyFieldConfig
  * @phpstan-type InputObjectConfig array{
  *   name?: string|null,
  *   description?: string|null,
@@ -51,16 +46,16 @@ class InputObjectType extends Type implements InputType, NullableType, NamedType
     private array $fields;
 
     /**
-     * @param array<string, mixed> $config
+     * @phpstan-param InputObjectConfig $config
      */
     public function __construct(array $config)
     {
         $config['name'] ??= $this->tryInferName();
         Utils::invariant(is_string($config['name']), 'Must provide name.');
 
-        $this->name              = $config['name'];
-        $this->description       = $config['description'] ?? null;
-        $this->astNode           = $config['astNode'] ?? null;
+        $this->name = $config['name'];
+        $this->description = $config['description'] ?? null;
+        $this->astNode = $config['astNode'] ?? null;
         $this->extensionASTNodes = $config['extensionASTNodes'] ?? [];
 
         $this->config = $config;
@@ -73,7 +68,7 @@ class InputObjectType extends Type implements InputType, NullableType, NamedType
     {
         $field = $this->findField($name);
 
-        Utils::invariant($field !== null, 'Field "%s" is not defined for type "%s"', $name, $this->name);
+        Utils::invariant(null !== $field, 'Field "%s" is not defined for type "%s"', $name, $this->name);
 
         return $field;
     }
@@ -167,8 +162,10 @@ class InputObjectType extends Type implements InputType, NullableType, NamedType
 
         // @phpstan-ignore-next-line should not happen if used correctly
         if (! is_iterable($fields)) {
+            $invalidFields = Utils::printSafe($fields);
+
             throw new InvariantViolation(
-                "{$this->name} fields must be an iterable or a callable which returns an iterable."
+                "{$this->name} fields must be an iterable or a callable which returns an iterable, got: {$invalidFields}."
             );
         }
 

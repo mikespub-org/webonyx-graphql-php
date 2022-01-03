@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace GraphQL\Type;
 
+use function count;
 use GraphQL\Language\AST\SchemaDefinitionNode;
 use GraphQL\Language\AST\SchemaTypeExtensionNode;
 use GraphQL\Type\Definition\Directive;
 use GraphQL\Type\Definition\NamedType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
-
-use function count;
 
 /**
  * Configuration options for schema construction.
@@ -27,7 +26,8 @@ use function count;
  *
  *     $schema = new Schema($config);
  *
- * @phpstan-type TypeLoader (callable(string $typeName): (Type&NamedType)|null)|null
+ * @phpstan-type TypeLoader callable(string $typeName): ((Type&NamedType)|null)
+ * @phpstan-type Types array<Type&NamedType>|(callable(): array<Type&NamedType>)
  */
 class SchemaConfig
 {
@@ -37,7 +37,10 @@ class SchemaConfig
 
     public ?ObjectType $subscription = null;
 
-    /** @var array<Type>|(callable(): array<Type>) */
+    /**
+     * @var array|callable
+     * @phpstan-var Types
+     */
     public $types = [];
 
     /** @var array<Directive>|null */
@@ -164,7 +167,8 @@ class SchemaConfig
     }
 
     /**
-     * @return array<Type>|(callable(): array<Type>)
+     * @return array|callable
+     * @phpstan-return Types
      *
      * @api
      */
@@ -174,7 +178,8 @@ class SchemaConfig
     }
 
     /**
-     * @param array<Type>|(callable(): array<Type>) $types
+     * @param array|callable $types
+     * @phpstan-param Types $types
      *
      * @api
      */

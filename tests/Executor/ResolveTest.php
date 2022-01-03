@@ -6,14 +6,17 @@ namespace GraphQL\Tests\Executor;
 
 use GraphQL\GraphQL;
 use GraphQL\Tests\Executor\TestClasses\Adder;
+use GraphQL\Type\Definition\FieldDefinition;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
-use PHPUnit\Framework\TestCase;
-
 use function json_encode;
+use PHPUnit\Framework\TestCase;
 use function uniqid;
 
+/**
+ * @phpstan-import-type UnnamedFieldDefinitionConfig from FieldDefinition
+ */
 class ResolveTest extends TestCase
 {
     // Execute: resolve function
@@ -33,11 +36,14 @@ class ResolveTest extends TestCase
         );
     }
 
-    private function buildSchema($testField)
+    /**
+     * @param UnnamedFieldDefinitionConfig $testField
+     */
+    private function buildSchema(array $testField): Schema
     {
         return new Schema([
             'query' => new ObjectType([
-                'name'   => 'Query',
+                'name' => 'Query',
                 'fields' => ['test' => $testField],
             ]),
         ]);
@@ -48,7 +54,7 @@ class ResolveTest extends TestCase
      */
     public function testDefaultFunctionCallsClosures(): void
     {
-        $schema  = $this->buildSchema(['type' => Type::string()]);
+        $schema = $this->buildSchema(['type' => Type::string()]);
         $_secret = 'secretValue' . uniqid();
 
         $source = [
@@ -86,8 +92,8 @@ class ResolveTest extends TestCase
     public function testUsesProvidedResolveFunction(): void
     {
         $schema = $this->buildSchema([
-            'type'    => Type::string(),
-            'args'    => [
+            'type' => Type::string(),
+            'args' => [
                 'aStr' => ['type' => Type::string()],
                 'aInt' => ['type' => Type::int()],
             ],

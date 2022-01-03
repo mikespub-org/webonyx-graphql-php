@@ -17,7 +17,7 @@ class StarWarsIntrospectionTest extends TestCase
      */
     public function testAllowsQueryingTheSchemaForTypes(): void
     {
-        $query    = '
+        $query = '
         query IntrospectionTypeQuery {
           __schema {
             types {
@@ -52,10 +52,15 @@ class StarWarsIntrospectionTest extends TestCase
 
     /**
      * Helper function to test a query and the expected response.
+     *
+     * @param array<string, mixed> $expected
      */
-    private static function assertValidQuery($query, $expected): void
+    private static function assertValidQuery(string $query, array $expected): void
     {
-        self::assertEquals(['data' => $expected], GraphQL::executeQuery(StarWarsSchema::build(), $query)->toArray());
+        self::assertEquals(
+            ['data' => $expected],
+            GraphQL::executeQuery(StarWarsSchema::build(), $query)->toArray()
+        );
     }
 
     /**
@@ -63,7 +68,7 @@ class StarWarsIntrospectionTest extends TestCase
      */
     public function testAllowsQueryingTheSchemaForQueryType(): void
     {
-        $query    = '
+        $query = '
         query IntrospectionQueryTypeQuery {
           __schema {
             queryType {
@@ -85,7 +90,7 @@ class StarWarsIntrospectionTest extends TestCase
      */
     public function testAllowsQueryingTheSchemaForASpecificType(): void
     {
-        $query    = '
+        $query = '
         query IntrospectionDroidTypeQuery {
           __type(name: "Droid") {
             name
@@ -103,7 +108,7 @@ class StarWarsIntrospectionTest extends TestCase
      */
     public function testAllowsQueryingForAnObjectKind(): void
     {
-        $query    = '
+        $query = '
         query IntrospectionDroidKindQuery {
           __type(name: "Droid") {
             name
@@ -125,7 +130,7 @@ class StarWarsIntrospectionTest extends TestCase
      */
     public function testAllowsQueryingForInterfaceKind(): void
     {
-        $query    = '
+        $query = '
         query IntrospectionCharacterKindQuery {
           __type(name: "Character") {
             name
@@ -147,7 +152,7 @@ class StarWarsIntrospectionTest extends TestCase
      */
     public function testAllowsQueryingForObjectFields(): void
     {
-        $query    = '
+        $query = '
         query IntrospectionDroidFieldsQuery {
           __type(name: "Droid") {
             name
@@ -163,7 +168,7 @@ class StarWarsIntrospectionTest extends TestCase
         ';
         $expected = [
             '__type' => [
-                'name'   => 'Droid',
+                'name' => 'Droid',
                 'fields' => [
                     [
                         'name' => 'id',
@@ -218,7 +223,7 @@ class StarWarsIntrospectionTest extends TestCase
      */
     public function testAllowsQueryingTheSchemaForNestedObjectFields(): void
     {
-        $query    = '
+        $query = '
         query IntrospectionDroidNestedFieldsQuery {
           __type(name: "Droid") {
             name
@@ -238,13 +243,13 @@ class StarWarsIntrospectionTest extends TestCase
         ';
         $expected = [
             '__type' => [
-                'name'   => 'Droid',
+                'name' => 'Droid',
                 'fields' => [
                     [
                         'name' => 'id',
                         'type' => [
-                            'name'   => null,
-                            'kind'   => 'NON_NULL',
+                            'name' => null,
+                            'kind' => 'NON_NULL',
                             'ofType' => [
                                 'name' => 'String',
                                 'kind' => 'SCALAR',
@@ -254,16 +259,16 @@ class StarWarsIntrospectionTest extends TestCase
                     [
                         'name' => 'name',
                         'type' => [
-                            'name'   => 'String',
-                            'kind'   => 'SCALAR',
+                            'name' => 'String',
+                            'kind' => 'SCALAR',
                             'ofType' => null,
                         ],
                     ],
                     [
                         'name' => 'friends',
                         'type' => [
-                            'name'   => null,
-                            'kind'   => 'LIST',
+                            'name' => null,
+                            'kind' => 'LIST',
                             'ofType' => [
                                 'name' => 'Character',
                                 'kind' => 'INTERFACE',
@@ -273,8 +278,8 @@ class StarWarsIntrospectionTest extends TestCase
                     [
                         'name' => 'appearsIn',
                         'type' => [
-                            'name'   => null,
-                            'kind'   => 'LIST',
+                            'name' => null,
+                            'kind' => 'LIST',
                             'ofType' => [
                                 'name' => 'Episode',
                                 'kind' => 'ENUM',
@@ -284,16 +289,16 @@ class StarWarsIntrospectionTest extends TestCase
                     [
                         'name' => 'secretBackstory',
                         'type' => [
-                            'name'   => 'String',
-                            'kind'   => 'SCALAR',
+                            'name' => 'String',
+                            'kind' => 'SCALAR',
                             'ofType' => null,
                         ],
                     ],
                     [
                         'name' => 'primaryFunction',
                         'type' => [
-                            'name'   => 'String',
-                            'kind'   => 'SCALAR',
+                            'name' => 'String',
+                            'kind' => 'SCALAR',
                             'ofType' => null,
                         ],
                     ],
@@ -342,11 +347,11 @@ class StarWarsIntrospectionTest extends TestCase
                             'args' => [
                                 [
                                     'defaultValue' => null,
-                                    'description'  => 'If omitted, returns the hero of the whole saga. If provided, returns the hero of that particular episode.',
-                                    'name'         => 'episode',
-                                    'type'         => [
-                                        'kind'   => 'ENUM',
-                                        'name'   => 'Episode',
+                                    'description' => 'If omitted, returns the hero of the whole saga. If provided, returns the hero of that particular episode.',
+                                    'name' => 'episode',
+                                    'type' => [
+                                        'kind' => 'ENUM',
+                                        'name' => 'Episode',
                                         'ofType' => null,
                                     ],
                                 ],
@@ -356,11 +361,11 @@ class StarWarsIntrospectionTest extends TestCase
                             'name' => 'human',
                             'args' => [
                                 [
-                                    'name'         => 'id',
-                                    'description'  => 'id of the human',
-                                    'type'         => [
-                                        'kind'   => 'NON_NULL',
-                                        'name'   => null,
+                                    'name' => 'id',
+                                    'description' => 'id of the human',
+                                    'type' => [
+                                        'kind' => 'NON_NULL',
+                                        'name' => null,
                                         'ofType' => [
                                             'kind' => 'SCALAR',
                                             'name' => 'String',
@@ -374,16 +379,15 @@ class StarWarsIntrospectionTest extends TestCase
                             'name' => 'droid',
                             'args' => [
                                 [
-                                    'name'         => 'id',
-                                    'description'  => 'id of the droid',
-                                    'type'         => [
-                                        'kind'   => 'NON_NULL',
-                                        'name'   => null,
-                                        'ofType' =>
-                                            [
-                                                'kind' => 'SCALAR',
-                                                'name' => 'String',
-                                            ],
+                                    'name' => 'id',
+                                    'description' => 'id of the droid',
+                                    'type' => [
+                                        'kind' => 'NON_NULL',
+                                        'name' => null,
+                                        'ofType' => [
+                                            'kind' => 'SCALAR',
+                                            'name' => 'String',
+                                        ],
                                     ],
                                     'defaultValue' => null,
                                 ],
@@ -402,7 +406,7 @@ class StarWarsIntrospectionTest extends TestCase
      */
     public function testAllowsQueryingTheSchemaForDocumentation(): void
     {
-        $query    = '
+        $query = '
         query IntrospectionDroidDescriptionQuery {
           __type(name: "Droid") {
             name
@@ -412,7 +416,7 @@ class StarWarsIntrospectionTest extends TestCase
         ';
         $expected = [
             '__type' => [
-                'name'        => 'Droid',
+                'name' => 'Droid',
                 'description' => 'A mechanical creature in the Star Wars universe.',
             ],
         ];

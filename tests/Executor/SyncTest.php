@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GraphQL\Tests\Executor;
 
+use function array_map;
 use DMS\PHPUnitExtensions\ArraySubset\ArraySubsetAsserts;
 use GraphQL\Deferred;
 use GraphQL\Error\FormattedError;
@@ -13,6 +14,7 @@ use GraphQL\Executor\Promise\Adapter\SyncPromise;
 use GraphQL\Executor\Promise\Adapter\SyncPromiseAdapter;
 use GraphQL\Executor\Promise\Promise;
 use GraphQL\GraphQL;
+use GraphQL\Language\AST\DocumentNode;
 use GraphQL\Language\Parser;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
@@ -20,32 +22,28 @@ use GraphQL\Type\Schema;
 use GraphQL\Validator\DocumentValidator;
 use PHPUnit\Framework\TestCase;
 
-use function array_map;
-
 class SyncTest extends TestCase
 {
     use ArraySubsetAsserts;
 
-    /** @var Schema */
-    private $schema;
+    private Schema $schema;
 
-    /** @var SyncPromiseAdapter */
-    private $promiseAdapter;
+    private SyncPromiseAdapter $promiseAdapter;
 
     public function setUp(): void
     {
         $this->schema = new Schema([
-            'query'    => new ObjectType([
-                'name'   => 'Query',
+            'query' => new ObjectType([
+                'name' => 'Query',
                 'fields' => [
-                    'syncField'  => [
-                        'type'    => Type::string(),
+                    'syncField' => [
+                        'type' => Type::string(),
                         'resolve' => static function ($rootValue) {
                             return $rootValue;
                         },
                     ],
                     'asyncField' => [
-                        'type'    => Type::string(),
+                        'type' => Type::string(),
                         'resolve' => static function ($rootValue): Deferred {
                             return new Deferred(static function () use ($rootValue) {
                                 return $rootValue;
@@ -55,10 +53,10 @@ class SyncTest extends TestCase
                 ],
             ]),
             'mutation' => new ObjectType([
-                'name'   => 'Mutation',
+                'name' => 'Mutation',
                 'fields' => [
                     'syncMutationField' => [
-                        'type'    => Type::string(),
+                        'type' => Type::string(),
                         'resolve' => static function ($rootValue) {
                             return $rootValue;
                         },
@@ -77,7 +75,7 @@ class SyncTest extends TestCase
      */
     public function testDoesNotReturnAPromiseForInitialErrors(): void
     {
-        $doc    = 'fragment Example on Query { syncField }';
+        $doc = 'fragment Example on Query { syncField }';
         $result = $this->execute(
             $this->schema,
             Parser::parse($doc),
@@ -86,24 +84,28 @@ class SyncTest extends TestCase
         self::assertSync(['errors' => [['message' => 'Must provide an operation.']]], $result);
     }
 
-    private function execute($schema, $doc, $rootValue = null)
+    /**
+     * @param mixed $rootValue
+     */
+    private function execute(Schema $schema, DocumentNode $doc, $rootValue = null): Promise
     {
         return Executor::promiseToExecute($this->promiseAdapter, $schema, $doc, $rootValue);
     }
 
-    private static function assertSync($expectedFinalArray, $actualResult): void
+    /**
+     * @param array<string, mixed> $expectedFinalArray
+     */
+    private static function assertSync(array $expectedFinalArray, Promise $actualResult): void
     {
         $message = 'Failed assertion that execution was synchronous';
-        self::assertInstanceOf(Promise::class, $actualResult, $message);
-        self::assertInstanceOf(SyncPromise::class, $actualResult->adoptedPromise, $message);
-        self::assertEquals(SyncPromise::FULFILLED, $actualResult->adoptedPromise->state, $message);
-        self::assertInstanceOf(ExecutionResult::class, $actualResult->adoptedPromise->result, $message);
-        self::assertArraySubset(
-            $expectedFinalArray,
-            $actualResult->adoptedPromise->result->toArray(),
-            false,
-            $message
-        );
+        $adoptedPromise = $actualResult->adoptedPromise;
+
+        self::assertInstanceOf(SyncPromise::class, $adoptedPromise, $message);
+        self::assertEquals(SyncPromise::FULFILLED, $adoptedPromise->state, $message);
+
+        $result = $adoptedPromise->result;
+        self::assertInstanceOf(ExecutionResult::class, $result);
+        self::assertArraySubset($expectedFinalArray, $result->toArray());
     }
 
     /**
@@ -111,7 +113,7 @@ class SyncTest extends TestCase
      */
     public function testDoesNotReturnAPromiseIfFieldsAreAllSynchronous(): void
     {
-        $doc    = 'query Example { syncField }';
+        $doc = 'query Example { syncField }';
         $result = $this->execute(
             $this->schema,
             Parser::parse($doc),
@@ -127,7 +129,7 @@ class SyncTest extends TestCase
      */
     public function testDoesNotReturnAPromiseIfMutationFieldsAreAllSynchronous(): void
     {
-        $doc    = 'mutation Example { syncMutationField }';
+        $doc = 'mutation Example { syncMutationField }';
         $result = $this->execute(
             $this->schema,
             Parser::parse($doc),
@@ -141,7 +143,7 @@ class SyncTest extends TestCase
      */
     public function testReturnsAPromiseIfAnyFieldIsAsynchronous(): void
     {
-        $doc    = 'query Example { syncField, asyncField }';
+        $doc = 'query Example { syncField, asyncField }';
         $result = $this->execute(
             $this->schema,
             Parser::parse($doc),
@@ -150,15 +152,20 @@ class SyncTest extends TestCase
         $this->assertAsync(['data' => ['syncField' => 'rootValue', 'asyncField' => 'rootValue']], $result);
     }
 
-    private function assertAsync($expectedFinalArray, $actualResult): void
+    /**
+     * @param array<string, mixed> $expectedFinalArray
+     */
+    private function assertAsync(array $expectedFinalArray, Promise $actualResult): void
     {
         $message = 'Failed assertion that execution was asynchronous';
-        self::assertInstanceOf(Promise::class, $actualResult, $message);
-        self::assertInstanceOf(SyncPromise::class, $actualResult->adoptedPromise, $message);
-        self::assertEquals(SyncPromise::PENDING, $actualResult->adoptedPromise->state, $message);
+        $adoptedPromise = $actualResult->adoptedPromise;
+
+        self::assertInstanceOf(SyncPromise::class, $adoptedPromise, $message);
+        self::assertEquals(SyncPromise::PENDING, $adoptedPromise->state, $message);
+
         $resolvedResult = $this->promiseAdapter->wait($actualResult);
-        self::assertInstanceOf(ExecutionResult::class, $resolvedResult, $message);
-        self::assertArraySubset($expectedFinalArray, $resolvedResult->toArray(), false, $message);
+        self::assertInstanceOf(ExecutionResult::class, $resolvedResult);
+        self::assertArraySubset($expectedFinalArray, $resolvedResult->toArray());
     }
 
     /**
@@ -166,16 +173,15 @@ class SyncTest extends TestCase
      */
     public function testDoesNotReturnAPromiseForSyntaxErrors(): void
     {
-        $doc    = 'fragment Example on Query { { { syncField }';
         $result = $this->graphqlSync(
             $this->schema,
-            $doc
+            'fragment Example on Query { { { syncField }'
         );
         self::assertSync(
             [
                 'errors' => [
                     [
-                        'message'   => 'Syntax Error: Expected Name, found {',
+                        'message' => 'Syntax Error: Expected Name, found {',
                         'locations' => [['line' => 1, 'column' => 29]],
                     ],
                 ],
@@ -184,7 +190,10 @@ class SyncTest extends TestCase
         );
     }
 
-    private function graphqlSync($schema, $doc, $rootValue = null)
+    /**
+     * @param mixed $rootValue
+     */
+    private function graphqlSync(Schema $schema, string $doc, $rootValue = null): Promise
     {
         return GraphQL::promiseToExecute($this->promiseAdapter, $schema, $doc, $rootValue);
     }
@@ -194,13 +203,13 @@ class SyncTest extends TestCase
      */
     public function testDoesNotReturnAPromiseForValidationErrors(): void
     {
-        $doc              = 'fragment Example on Query { unknownField }';
+        $doc = 'fragment Example on Query { unknownField }';
         $validationErrors = DocumentValidator::validate($this->schema, Parser::parse($doc));
-        $result           = $this->graphqlSync(
+        $result = $this->graphqlSync(
             $this->schema,
             $doc
         );
-        $expected         = [
+        $expected = [
             'errors' => array_map(
                 [FormattedError::class, 'createFromException'],
                 $validationErrors
@@ -214,7 +223,7 @@ class SyncTest extends TestCase
      */
     public function testDoesNotReturnAPromiseForSyncExecution(): void
     {
-        $doc    = 'query Example { syncField }';
+        $doc = 'query Example { syncField }';
         $result = $this->graphqlSync(
             $this->schema,
             $doc,

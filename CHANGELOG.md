@@ -24,10 +24,14 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Move complexity related code from `FieldDefinition` to `QueryComplexity`
 - Exclude unused standard types from the schema
 - Require lazy type loader to return `Type` directly without an intermediary callable
+- Allow lazy type loader to return `null`
 - Rename `ServerConfig` option `persistentQueryLoader` to `persistedQueryLoader`
 - Call previously unused methods `EnumType::parseValue()` and `EnumType::parseLiteral()`
 - Strongly type `PromiseAdapter::createRejected()` to require `\Throwable`
 - Move members specific to `NamedType` out of `Type`: `$name`, `$description`, `$config`, `isBuiltInType()`, `assertValid()`
+- Always convert recursively when calling `Node::toArray()`
+- Make `Directive::$config['args']` use the same definition style as `FieldDefinition::$config['args']`
+- Rename `FieldArgument` to `Argument`
 
 ### Added
 
@@ -40,6 +44,8 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Add validation rule `UniqueEnumValueNames`
 - Add SDL validation rule `UniqueOperationTypes` (#995)
 - Add ability to remove custom validation rules after adding them via `DocumentValidator::removeRule()`
+- Allow lazy enum values
+- Make `Node` implement `JsonSerializable`
 
 ### Optimized
 
@@ -89,6 +95,8 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove `WrappingType::getWrappedType()` argument `$recurse` in favor of `WrappingType::getInnermostType()`
 - Remove `Type::assertType()`
 - Remove `ListOfType::$ofType`, `ListOfType::getOfType()` and `NonNull::getOfType()`
+- Remove option `commentDescriptions` from `BuildSchema::buildAST()`, `BuildSchema::build()` and `Printer::doPrint()`
+- Remove parameter `$options` from `ASTDefinitionBuilder`
 
 ## 14.11.3
 

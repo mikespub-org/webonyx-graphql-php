@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace GraphQL\Tests\Language;
 
+use function file_get_contents;
 use GraphQL\Error\SyntaxError;
 use GraphQL\Language\AST\ArgumentNode;
 use GraphQL\Language\AST\FieldNode;
 use GraphQL\Language\AST\NameNode;
-use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\NodeKind;
 use GraphQL\Language\AST\NodeList;
 use GraphQL\Language\AST\OperationDefinitionNode;
@@ -18,13 +18,12 @@ use GraphQL\Language\AST\VariableNode;
 use GraphQL\Language\Parser;
 use GraphQL\Language\Source;
 use GraphQL\Language\SourceLocation;
+use GraphQL\Tests\TestCaseBase;
 use GraphQL\Utils\Utils;
-use PHPUnit\Framework\TestCase;
-
-use function file_get_contents;
+use function is_array;
 use function sprintf;
 
-class ParserTest extends TestCase
+class ParserTest extends TestCaseBase
 {
     /**
      * @return array<int, array{0: string, 1: string, 2: string, 3?: list<int>, 4?: list<SourceLocation>}>
@@ -72,14 +71,17 @@ fragment MissingOn Type
     /**
      * @see          it('parse provides useful errors')
      *
+     * @param list<int>            $expectedPositions
+     * @param list<SourceLocation> $expectedLocations
+     *
      * @dataProvider parseProvidesUsefulErrors
      */
     public function testParseProvidesUsefulErrors(
-        $str,
-        $expectedMessage,
-        $stringRepresentation,
-        $expectedPositions = null,
-        $expectedLocations = null
+        string $str,
+        string $expectedMessage,
+        string $stringRepresentation,
+        ?array $expectedPositions = null,
+        ?array $expectedLocations = null
     ): void {
         try {
             Parser::parse($str);
@@ -88,11 +90,11 @@ fragment MissingOn Type
             self::assertEquals($expectedMessage, $e->getMessage());
             self::assertEquals($stringRepresentation, (string) $e);
 
-            if ($expectedPositions) {
+            if (is_array($expectedPositions)) {
                 self::assertEquals($expectedPositions, $e->getPositions());
             }
 
-            if ($expectedLocations) {
+            if (is_array($expectedLocations)) {
                 self::assertEquals($expectedLocations, $e->getLocations());
             }
         }
@@ -119,9 +121,8 @@ fragment MissingOn Type
      */
     public function testParsesVariableInlineValues(): void
     {
-        $this->expectNotToPerformAssertions();
-        // Following line should not throw:
         Parser::parse('{ field(complex: { a: { b: [ $var ] } }) }');
+        self::assertDidNotCrash();
     }
 
     /**
@@ -141,11 +142,11 @@ fragment MissingOn Type
      */
     public function testParsesVariableDefinitionDirectives(): void
     {
-        $this->expectNotToPerformAssertions();
         Parser::parse('query Foo($x: Boolean = false @bar) { field }');
+        self::assertDidNotCrash();
     }
 
-    private function expectSyntaxError($text, $message, $location): void
+    private function expectSyntaxError(string $text, string $message, SourceLocation $location): void
     {
         $this->expectException(SyntaxError::class);
         $this->expectExceptionMessage($message);
@@ -158,7 +159,7 @@ fragment MissingOn Type
         }
     }
 
-    private function loc($line, $column)
+    private function loc(int $line, int $column): SourceLocation
     {
         return new SourceLocation($line, $column);
     }
@@ -194,7 +195,7 @@ fragment MissingOn Type
     {
         // Note: \u0A0A could be naively interpreted as two line-feed chars.
 
-        $char  = Utils::chr(0x0A0A);
+        $char = Utils::chr(0x0A0A);
         $query = <<<HEREDOC
         # This comment has a $char multi-byte character.
         { field(arg: "Has a $char multi-byte character.") }
@@ -205,10 +206,10 @@ HEREDOC;
         $expected = new SelectionSetNode([
             'selections' => new NodeList([
                 new FieldNode([
-                    'name'       => new NameNode(['value' => 'field']),
-                    'arguments'  => new NodeList([
+                    'name' => new NameNode(['value' => 'field']),
+                    'arguments' => new NodeList([
                         new ArgumentNode([
-                            'name'  => new NameNode(['value' => 'arg']),
+                            'name' => new NameNode(['value' => 'arg']),
                             'value' => new StringValueNode(
                                 ['value' => sprintf('Has a %s multi-byte character.', $char)]
                             ),
@@ -231,12 +232,12 @@ HEREDOC;
     {
         // Following should not throw:
         $kitchenSink = file_get_contents(__DIR__ . '/kitchen-sink.graphql');
-        $result      = Parser::parse($kitchenSink);
+        $result = Parser::parse($kitchenSink);
         self::assertNotEmpty($result);
     }
 
     /**
-     * allows non-keywords anywhere a Name is allowed
+     * allows non-keywords anywhere a Name is allowed.
      */
     public function testAllowsNonKeywordsAnywhereANameIsAllowed(): void
     {
@@ -251,12 +252,13 @@ HEREDOC;
         ];
         foreach ($nonKeywords as $keyword) {
             $fragmentName = $keyword;
-            if ($keyword === 'on') {
+            if ('on' === $keyword) {
                 $fragmentName = 'a';
             }
 
             // Expected not to throw:
-            $result = Parser::parse(<<<GRAPHQL
+            $result = Parser::parse(
+                <<<GRAPHQL
 query $keyword {
 ... $fragmentName
 ... on $keyword { field }
@@ -278,13 +280,12 @@ GRAPHQL
      */
     public function testParsessAnonymousMutationOperations(): void
     {
-        $this->expectNotToPerformAssertions();
-        // Should not throw:
         Parser::parse('
           mutation {
             mutationField
           }
         ');
+        self::assertDidNotCrash();
     }
 
     /**
@@ -292,13 +293,12 @@ GRAPHQL
      */
     public function testParsesAnonymousSubscriptionOperations(): void
     {
-        $this->expectNotToPerformAssertions();
-        // Should not throw:
         Parser::parse('
           subscription {
             subscriptionField
           }
         ');
+        self::assertDidNotCrash();
     }
 
     /**
@@ -306,13 +306,12 @@ GRAPHQL
      */
     public function testParsesNamedMutationOperations(): void
     {
-        $this->expectNotToPerformAssertions();
-        // Should not throw:
         Parser::parse('
           mutation Foo {
             mutationField
           }
         ');
+        self::assertDidNotCrash();
     }
 
     /**
@@ -320,12 +319,12 @@ GRAPHQL
      */
     public function testParsesNamedSubscriptionOperations(): void
     {
-        $this->expectNotToPerformAssertions();
         Parser::parse('
           subscription Foo {
             subscriptionField
           }
         ');
+        self::assertDidNotCrash();
     }
 
     /**
@@ -345,80 +344,80 @@ GRAPHQL
         $loc = static function (int $start, int $end): array {
             return [
                 'start' => $start,
-                'end'   => $end,
+                'end' => $end,
             ];
         };
 
         $expected = [
-            'kind'        => NodeKind::DOCUMENT,
-            'loc'         => $loc(0, 41),
+            'kind' => NodeKind::DOCUMENT,
+            'loc' => $loc(0, 41),
             'definitions' => [
                 [
-                    'kind'                => NodeKind::OPERATION_DEFINITION,
-                    'loc'                 => $loc(0, 40),
-                    'operation'           => 'query',
-                    'name'                => null,
+                    'kind' => NodeKind::OPERATION_DEFINITION,
+                    'loc' => $loc(0, 40),
+                    'operation' => 'query',
+                    // 'name'                => undefined,
                     'variableDefinitions' => [],
-                    'directives'          => [],
-                    'selectionSet'        => [
-                        'kind'       => NodeKind::SELECTION_SET,
-                        'loc'        => $loc(0, 40),
+                    'directives' => [],
+                    'selectionSet' => [
+                        'kind' => NodeKind::SELECTION_SET,
+                        'loc' => $loc(0, 40),
                         'selections' => [
                             [
-                                'kind'         => NodeKind::FIELD,
-                                'loc'          => $loc(4, 38),
-                                'alias'        => null,
-                                'name'         => [
-                                    'kind'  => NodeKind::NAME,
-                                    'loc'   => $loc(4, 8),
+                                'kind' => NodeKind::FIELD,
+                                'loc' => $loc(4, 38),
+                                // 'alias'        => undefined,
+                                'name' => [
+                                    'kind' => NodeKind::NAME,
+                                    'loc' => $loc(4, 8),
                                     'value' => 'node',
                                 ],
-                                'arguments'    => [
+                                'arguments' => [
                                     [
-                                        'kind'  => NodeKind::ARGUMENT,
-                                        'name'  => [
-                                            'kind'  => NodeKind::NAME,
-                                            'loc'   => $loc(9, 11),
+                                        'kind' => NodeKind::ARGUMENT,
+                                        'name' => [
+                                            'kind' => NodeKind::NAME,
+                                            'loc' => $loc(9, 11),
                                             'value' => 'id',
                                         ],
                                         'value' => [
-                                            'kind'  => NodeKind::INT,
-                                            'loc'   => $loc(13, 14),
+                                            'kind' => NodeKind::INT,
+                                            'loc' => $loc(13, 14),
                                             'value' => '4',
                                         ],
-                                        'loc'   => $loc(9, 14),
+                                        'loc' => $loc(9, 14),
                                     ],
                                 ],
-                                'directives'   => [],
+                                'directives' => [],
                                 'selectionSet' => [
-                                    'kind'       => NodeKind::SELECTION_SET,
-                                    'loc'        => $loc(16, 38),
+                                    'kind' => NodeKind::SELECTION_SET,
+                                    'loc' => $loc(16, 38),
                                     'selections' => [
                                         [
-                                            'kind'         => NodeKind::FIELD,
-                                            'loc'          => $loc(22, 24),
-                                            'alias'        => null,
-                                            'name'         => [
-                                                'kind'  => NodeKind::NAME,
-                                                'loc'   => $loc(22, 24),
+                                            'kind' => NodeKind::FIELD,
+                                            'loc' => $loc(22, 24),
+                                            // 'alias'        => undefined,
+                                            'name' => [
+                                                'kind' => NodeKind::NAME,
+                                                'loc' => $loc(22, 24),
                                                 'value' => 'id',
                                             ],
-                                            'arguments'    => [],
-                                            'directives'   => [],
-                                            'selectionSet' => null,
+                                            'arguments' => [],
+                                            'directives' => [],
+                                            // 'selectionSet' => undefined,
                                         ],
                                         [
-                                            'kind'         => NodeKind::FIELD,
-                                            'loc'          => $loc(30, 34),
-                                            'alias'        => null,
-                                            'name'         => [
-                                                'kind'  => NodeKind::NAME,
-                                                'loc'   => $loc(30, 34),
+                                            'kind' => NodeKind::FIELD,
+                                            'loc' => $loc(30, 34),
+                                            // 'alias'        => undefined,
+                                            'name' => [
+                                                'kind' => NodeKind::NAME,
+                                                'loc' => $loc(30, 34),
                                                 'value' => 'name',
                                             ],
-                                            'arguments'    => [],
-                                            'directives'   => [],
-                                            'selectionSet' => null,
+                                            'arguments' => [],
+                                            'directives' => [],
+                                            // 'selectionSet' => undefined,
                                         ],
                                     ],
                                 ],
@@ -429,15 +428,7 @@ GRAPHQL
             ],
         ];
 
-        self::assertEquals($expected, self::nodeToArray($result));
-    }
-
-    /**
-     * @return mixed[]
-     */
-    public static function nodeToArray(Node $node): array
-    {
-        return TestUtils::nodeToArray($node);
+        self::assertEquals($expected, $result->toArray());
     }
 
     /**
@@ -456,52 +447,52 @@ GRAPHQL
         $loc = static function ($start, $end): array {
             return [
                 'start' => $start,
-                'end'   => $end,
+                'end' => $end,
             ];
         };
 
         $expected = [
-            'kind'        => NodeKind::DOCUMENT,
-            'loc'         => $loc(0, 30),
+            'kind' => NodeKind::DOCUMENT,
+            'loc' => $loc(0, 30),
             'definitions' => [
                 [
-                    'kind'                => NodeKind::OPERATION_DEFINITION,
-                    'loc'                 => $loc(0, 29),
-                    'operation'           => 'query',
-                    'name'                => null,
+                    'kind' => NodeKind::OPERATION_DEFINITION,
+                    'loc' => $loc(0, 29),
+                    'operation' => 'query',
+                    // 'name'                => undefined,
                     'variableDefinitions' => [],
-                    'directives'          => [],
-                    'selectionSet'        => [
-                        'kind'       => NodeKind::SELECTION_SET,
-                        'loc'        => $loc(6, 29),
+                    'directives' => [],
+                    'selectionSet' => [
+                        'kind' => NodeKind::SELECTION_SET,
+                        'loc' => $loc(6, 29),
                         'selections' => [
                             [
-                                'kind'         => NodeKind::FIELD,
-                                'loc'          => $loc(10, 27),
-                                'alias'        => null,
-                                'name'         => [
-                                    'kind'  => NodeKind::NAME,
-                                    'loc'   => $loc(10, 14),
+                                'kind' => NodeKind::FIELD,
+                                'loc' => $loc(10, 27),
+                                // 'alias'        => undefined,
+                                'name' => [
+                                    'kind' => NodeKind::NAME,
+                                    'loc' => $loc(10, 14),
                                     'value' => 'node',
                                 ],
-                                'arguments'    => [],
-                                'directives'   => [],
+                                'arguments' => [],
+                                'directives' => [],
                                 'selectionSet' => [
-                                    'kind'       => NodeKind::SELECTION_SET,
-                                    'loc'        => $loc(15, 27),
+                                    'kind' => NodeKind::SELECTION_SET,
+                                    'loc' => $loc(15, 27),
                                     'selections' => [
                                         [
-                                            'kind'         => NodeKind::FIELD,
-                                            'loc'          => $loc(21, 23),
-                                            'alias'        => null,
-                                            'name'         => [
-                                                'kind'  => NodeKind::NAME,
-                                                'loc'   => $loc(21, 23),
+                                            'kind' => NodeKind::FIELD,
+                                            'loc' => $loc(21, 23),
+                                            // 'alias'        => undefined,
+                                            'name' => [
+                                                'kind' => NodeKind::NAME,
+                                                'loc' => $loc(21, 23),
                                                 'value' => 'id',
                                             ],
-                                            'arguments'    => [],
-                                            'directives'   => [],
-                                            'selectionSet' => null,
+                                            'arguments' => [],
+                                            'directives' => [],
+                                            // 'selectionSet' => undefined,
                                         ],
                                     ],
                                 ],
@@ -512,7 +503,7 @@ GRAPHQL
             ],
         ];
 
-        self::assertEquals($expected, self::nodeToArray($result));
+        self::assertEquals($expected, $result->toArray());
     }
 
     /**
@@ -548,7 +539,7 @@ GRAPHQL
     {
         $source = new Source('{ id }');
         $result = Parser::parse($source);
-        self::assertEquals(['start' => 0, 'end' => '6'], TestUtils::locationToArray($result->loc));
+        self::assertEquals(['start' => 0, 'end' => '6'], $result->loc->toArray());
     }
 
     /**
@@ -582,9 +573,9 @@ GRAPHQL
         self::assertEquals(
             [
                 'kind' => NodeKind::NULL,
-                'loc'  => ['start' => 0, 'end' => 4],
+                'loc' => ['start' => 0, 'end' => 4],
             ],
-            self::nodeToArray(Parser::parseValue('null'))
+            Parser::parseValue('null')->toArray()
         );
     }
 
@@ -595,23 +586,23 @@ GRAPHQL
     {
         self::assertEquals(
             [
-                'kind'   => NodeKind::LST,
-                'loc'    => ['start' => 0, 'end' => 11],
+                'kind' => NodeKind::LST,
+                'loc' => ['start' => 0, 'end' => 11],
                 'values' => [
                     [
-                        'kind'  => NodeKind::INT,
-                        'loc'   => ['start' => 1, 'end' => 4],
+                        'kind' => NodeKind::INT,
+                        'loc' => ['start' => 1, 'end' => 4],
                         'value' => '123',
                     ],
                     [
-                        'kind'  => NodeKind::STRING,
-                        'loc'   => ['start' => 5, 'end' => 10],
+                        'kind' => NodeKind::STRING,
+                        'loc' => ['start' => 5, 'end' => 10],
                         'value' => 'abc',
                         'block' => false,
                     ],
                 ],
             ],
-            self::nodeToArray(Parser::parseValue('[123 "abc"]'))
+            Parser::parseValue('[123 "abc"]')->toArray()
         );
     }
 
@@ -623,14 +614,14 @@ GRAPHQL
         self::assertEquals(
             [
                 'kind' => NodeKind::NAMED_TYPE,
-                'loc'  => ['start' => 0, 'end' => 6],
+                'loc' => ['start' => 0, 'end' => 6],
                 'name' => [
-                    'kind'  => NodeKind::NAME,
-                    'loc'   => ['start' => 0, 'end' => 6],
+                    'kind' => NodeKind::NAME,
+                    'loc' => ['start' => 0, 'end' => 6],
                     'value' => 'String',
                 ],
             ],
-            self::nodeToArray(Parser::parseType('String'))
+            Parser::parseType('String')->toArray()
         );
     }
 
@@ -642,14 +633,14 @@ GRAPHQL
         self::assertEquals(
             [
                 'kind' => NodeKind::NAMED_TYPE,
-                'loc'  => ['start' => 0, 'end' => 6],
+                'loc' => ['start' => 0, 'end' => 6],
                 'name' => [
-                    'kind'  => NodeKind::NAME,
-                    'loc'   => ['start' => 0, 'end' => 6],
+                    'kind' => NodeKind::NAME,
+                    'loc' => ['start' => 0, 'end' => 6],
                     'value' => 'MyType',
                 ],
             ],
-            self::nodeToArray(Parser::parseType('MyType'))
+            Parser::parseType('MyType')->toArray()
         );
     }
 
@@ -661,18 +652,18 @@ GRAPHQL
         self::assertEquals(
             [
                 'kind' => NodeKind::LIST_TYPE,
-                'loc'  => ['start' => 0, 'end' => 8],
+                'loc' => ['start' => 0, 'end' => 8],
                 'type' => [
                     'kind' => NodeKind::NAMED_TYPE,
-                    'loc'  => ['start' => 1, 'end' => 7],
+                    'loc' => ['start' => 1, 'end' => 7],
                     'name' => [
-                        'kind'  => NodeKind::NAME,
-                        'loc'   => ['start' => 1, 'end' => 7],
+                        'kind' => NodeKind::NAME,
+                        'loc' => ['start' => 1, 'end' => 7],
                         'value' => 'MyType',
                     ],
                 ],
             ],
-            self::nodeToArray(Parser::parseType('[MyType]'))
+            Parser::parseType('[MyType]')->toArray()
         );
     }
 
@@ -684,18 +675,18 @@ GRAPHQL
         self::assertEquals(
             [
                 'kind' => NodeKind::NON_NULL_TYPE,
-                'loc'  => ['start' => 0, 'end' => 7],
+                'loc' => ['start' => 0, 'end' => 7],
                 'type' => [
                     'kind' => NodeKind::NAMED_TYPE,
-                    'loc'  => ['start' => 0, 'end' => 6],
+                    'loc' => ['start' => 0, 'end' => 6],
                     'name' => [
-                        'kind'  => NodeKind::NAME,
-                        'loc'   => ['start' => 0, 'end' => 6],
+                        'kind' => NodeKind::NAME,
+                        'loc' => ['start' => 0, 'end' => 6],
                         'value' => 'MyType',
                     ],
                 ],
             ],
-            self::nodeToArray(Parser::parseType('MyType!'))
+            Parser::parseType('MyType!')->toArray()
         );
     }
 
@@ -707,22 +698,22 @@ GRAPHQL
         self::assertEquals(
             [
                 'kind' => NodeKind::LIST_TYPE,
-                'loc'  => ['start' => 0, 'end' => 9],
+                'loc' => ['start' => 0, 'end' => 9],
                 'type' => [
                     'kind' => NodeKind::NON_NULL_TYPE,
-                    'loc'  => ['start' => 1, 'end' => 8],
+                    'loc' => ['start' => 1, 'end' => 8],
                     'type' => [
                         'kind' => NodeKind::NAMED_TYPE,
-                        'loc'  => ['start' => 1, 'end' => 7],
+                        'loc' => ['start' => 1, 'end' => 7],
                         'name' => [
-                            'kind'  => NodeKind::NAME,
-                            'loc'   => ['start' => 1, 'end' => 7],
+                            'kind' => NodeKind::NAME,
+                            'loc' => ['start' => 1, 'end' => 7],
                             'value' => 'MyType',
                         ],
                     ],
                 ],
             ],
-            self::nodeToArray(Parser::parseType('[MyType!]'))
+            Parser::parseType('[MyType!]')->toArray()
         );
     }
 

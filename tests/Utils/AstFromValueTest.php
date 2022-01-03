@@ -26,8 +26,7 @@ use Throwable;
 
 class AstFromValueTest extends TestCase
 {
-    /** @var stdClass */
-    private $complexValue;
+    private stdClass $complexValue;
 
     /**
      * @see it('converts boolean values to ASTs')
@@ -162,23 +161,18 @@ class AstFromValueTest extends TestCase
     private function myEnum(): EnumType
     {
         return new EnumType([
-            'name'   => 'MyEnum',
+            'name' => 'MyEnum',
             'values' => [
-                'HELLO'   => [],
+                'HELLO' => [],
                 'GOODBYE' => [],
                 'COMPLEX' => ['value' => $this->complexValue()],
             ],
         ]);
     }
 
-    private function complexValue()
+    private function complexValue(): stdClass
     {
-        if (! isset($this->complexValue)) {
-            $this->complexValue                = new stdClass();
-            $this->complexValue->someArbitrary = 'complexValue';
-        }
-
-        return $this->complexValue;
+        return $this->complexValue ??= (object) ['someArbitrary' => 'complexValue'];
     }
 
     /**
@@ -220,7 +214,7 @@ class AstFromValueTest extends TestCase
     public function testConvertsInputObjects(): void
     {
         $inputObj = new InputObjectType([
-            'name'   => 'MyInputObj',
+            'name' => 'MyInputObj',
             'fields' => [
                 'foo' => Type::float(),
                 'bar' => $this->myEnum(),
@@ -245,7 +239,7 @@ class AstFromValueTest extends TestCase
     private function objectField(string $name, $value): ObjectFieldNode
     {
         return new ObjectFieldNode([
-            'name'  => new NameNode(['value' => $name]),
+            'name' => new NameNode(['value' => $name]),
             'value' => $value,
         ]);
     }
@@ -256,7 +250,7 @@ class AstFromValueTest extends TestCase
     public function testConvertsInputObjectsWithExplicitNulls(): void
     {
         $inputObj = new InputObjectType([
-            'name'   => 'MyInputObj',
+            'name' => 'MyInputObj',
             'fields' => [
                 'foo' => Type::float(),
                 'bar' => $this->myEnum(),

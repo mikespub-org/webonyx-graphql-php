@@ -11,10 +11,14 @@ use GraphQL\Error\UserError;
 use GraphQL\Executor\Executor;
 use GraphQL\Language\Parser;
 use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\OutputType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @see describe('Execute: Handles list nullability', () => {
+ */
 class ListsTest extends TestCase
 {
     use ArraySubsetAsserts;
@@ -22,7 +26,7 @@ class ListsTest extends TestCase
     // Describe: Execute: Handles list nullability
 
     /**
-     * [T]
+     * [T].
      */
     public function testHandlesNullableListsWithArray(): void
     {
@@ -45,24 +49,33 @@ class ListsTest extends TestCase
         );
     }
 
-    private function checkHandlesNullableLists($testData, $expected): void
+    /**
+     * @param mixed                $testData
+     * @param array<string, mixed> $expected
+     */
+    private function checkHandlesNullableLists($testData, array $expected): void
     {
         $testType = Type::listOf(Type::int());
         $this->check($testType, $testData, $expected);
     }
 
-    private function check($testType, $testData, $expected, int $debug = DebugFlag::NONE): void
+    /**
+     * @param Type                 &OutputType $testType
+     * @param mixed                $testData
+     * @param array<string, mixed> $expected
+     */
+    private function check(Type $testType, $testData, array $expected, int $debug = DebugFlag::NONE): void
     {
-        $data     = ['test' => $testData];
+        $data = ['test' => $testData];
         $dataType = null;
 
         $dataType = new ObjectType([
-            'name'   => 'DataType',
+            'name' => 'DataType',
             'fields' => static function () use (&$testType, &$dataType, $data): array {
                 return [
                     'test' => ['type' => $testType],
                     'nest' => [
-                        'type'    => $dataType,
+                        'type' => $dataType,
                         'resolve' => static function () use ($data): array {
                             return $data;
                         },
@@ -80,7 +93,7 @@ class ListsTest extends TestCase
     }
 
     /**
-     * [T]
+     * [T].
      */
     public function testHandlesNullableListsWithPromiseArray(): void
     {
@@ -116,12 +129,12 @@ class ListsTest extends TestCase
                 });
             },
             [
-                'data'   => ['nest' => ['test' => null]],
+                'data' => ['nest' => ['test' => null]],
                 'errors' => [
                     [
-                        'message'   => 'bad',
+                        'message' => 'bad',
                         'locations' => [['line' => 1, 'column' => 10]],
-                        'path'      => ['nest', 'test'],
+                        'path' => ['nest', 'test'],
                     ],
                 ],
             ]
@@ -129,7 +142,7 @@ class ListsTest extends TestCase
     }
 
     /**
-     * [T]
+     * [T].
      */
     public function testHandlesNullableListsWithArrayPromise(): void
     {
@@ -186,12 +199,12 @@ class ListsTest extends TestCase
                 ];
             },
             [
-                'data'   => ['nest' => ['test' => [1, null, 2]]],
+                'data' => ['nest' => ['test' => [1, null, 2]]],
                 'errors' => [
                     [
-                        'message'   => 'bad',
+                        'message' => 'bad',
                         'locations' => [['line' => 1, 'column' => 10]],
-                        'path'      => ['nest', 'test', 1],
+                        'path' => ['nest', 'test', 1],
                     ],
                 ],
             ]
@@ -219,10 +232,10 @@ class ListsTest extends TestCase
         $this->checkHandlesNonNullableLists(
             null,
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -231,7 +244,11 @@ class ListsTest extends TestCase
         );
     }
 
-    private function checkHandlesNonNullableLists($testData, $expected, int $debug = DebugFlag::NONE): void
+    /**
+     * @param mixed                $testData
+     * @param array<string, mixed> $expected
+     */
+    private function checkHandlesNonNullableLists($testData, array $expected, int $debug = DebugFlag::NONE): void
     {
         $testType = Type::nonNull(Type::listOf(Type::int()));
         $this->check($testType, $testData, $expected, $debug);
@@ -262,10 +279,10 @@ class ListsTest extends TestCase
         $this->checkHandlesNonNullableLists(
             null,
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -281,12 +298,12 @@ class ListsTest extends TestCase
                 });
             },
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'message'   => 'bad',
+                        'message' => 'bad',
                         'locations' => [['line' => 1, 'column' => 10]],
-                        'path'      => ['nest', 'test'],
+                        'path' => ['nest', 'test'],
                     ],
                 ],
             ]
@@ -343,12 +360,12 @@ class ListsTest extends TestCase
                 ];
             },
             [
-                'data'   => ['nest' => ['test' => [1, null, 2]]],
+                'data' => ['nest' => ['test' => [1, null, 2]]],
                 'errors' => [
                     [
-                        'message'   => 'bad',
+                        'message' => 'bad',
                         'locations' => [['line' => 1, 'column' => 10]],
-                        'path'      => ['nest', 'test', 1],
+                        'path' => ['nest', 'test', 1],
                     ],
                 ],
             ]
@@ -356,7 +373,7 @@ class ListsTest extends TestCase
     }
 
     /**
-     * [T!]
+     * [T!].
      */
     public function testHandlesListOfNonNullsWithArray(): void
     {
@@ -370,10 +387,10 @@ class ListsTest extends TestCase
         $this->checkHandlesListOfNonNulls(
             [1, null, 2],
             [
-                'data'   => ['nest' => ['test' => null]],
+                'data' => ['nest' => ['test' => null]],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -388,14 +405,18 @@ class ListsTest extends TestCase
         );
     }
 
-    private function checkHandlesListOfNonNulls($testData, $expected, int $debug = DebugFlag::NONE): void
+    /**
+     * @param mixed                $testData
+     * @param array<string, mixed> $expected
+     */
+    private function checkHandlesListOfNonNulls($testData, array $expected, int $debug = DebugFlag::NONE): void
     {
         $testType = Type::listOf(Type::nonNull(Type::int()));
         $this->check($testType, $testData, $expected, $debug);
     }
 
     /**
-     * [T!]
+     * [T!].
      */
     public function testHandlesListOfNonNullsWithPromiseArray(): void
     {
@@ -413,10 +434,10 @@ class ListsTest extends TestCase
                 return [1, null, 2];
             }),
             [
-                'data'   => ['nest' => ['test' => null]],
+                'data' => ['nest' => ['test' => null]],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -440,12 +461,12 @@ class ListsTest extends TestCase
                 });
             },
             [
-                'data'   => ['nest' => ['test' => null]],
+                'data' => ['nest' => ['test' => null]],
                 'errors' => [
                     [
-                        'message'   => 'bad',
+                        'message' => 'bad',
                         'locations' => [['line' => 1, 'column' => 10]],
-                        'path'      => ['nest', 'test'],
+                        'path' => ['nest', 'test'],
                     ],
                 ],
             ]
@@ -502,12 +523,12 @@ class ListsTest extends TestCase
                 ];
             },
             [
-                'data'   => ['nest' => ['test' => null]],
+                'data' => ['nest' => ['test' => null]],
                 'errors' => [
                     [
-                        'message'   => 'bad',
+                        'message' => 'bad',
                         'locations' => [['line' => 1, 'column' => 10]],
-                        'path'      => ['nest', 'test', 1],
+                        'path' => ['nest', 'test', 1],
                     ],
                 ],
             ]
@@ -529,10 +550,10 @@ class ListsTest extends TestCase
         $this->checkHandlesNonNullListOfNonNulls(
             [1, null, 2],
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -544,10 +565,10 @@ class ListsTest extends TestCase
         $this->checkHandlesNonNullListOfNonNulls(
             null,
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -556,7 +577,11 @@ class ListsTest extends TestCase
         );
     }
 
-    public function checkHandlesNonNullListOfNonNulls($testData, $expected, int $debug = DebugFlag::NONE): void
+    /**
+     * @param mixed                $testData
+     * @param array<string, mixed> $expected
+     */
+    public function checkHandlesNonNullListOfNonNulls($testData, array $expected, int $debug = DebugFlag::NONE): void
     {
         $testType = Type::nonNull(Type::listOf(Type::nonNull(Type::int())));
         $this->check($testType, $testData, $expected, $debug);
@@ -581,10 +606,10 @@ class ListsTest extends TestCase
                 return [1, null, 2];
             }),
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -598,10 +623,10 @@ class ListsTest extends TestCase
                 return null;
             }),
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -617,12 +642,12 @@ class ListsTest extends TestCase
                 });
             },
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'message'   => 'bad',
+                        'message' => 'bad',
                         'locations' => [['line' => 1, 'column' => 10]],
-                        'path'      => ['nest', 'test'],
+                        'path' => ['nest', 'test'],
                     ],
                 ],
             ]
@@ -643,7 +668,6 @@ class ListsTest extends TestCase
                 new Deferred(static function (): int {
                     return 2;
                 }),
-
             ],
             ['data' => ['nest' => ['test' => [1, 2]]]]
         );
@@ -662,10 +686,10 @@ class ListsTest extends TestCase
                 }),
             ],
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'locations'    => [['line' => 1, 'column' => 10]],
+                        'locations' => [['line' => 1, 'column' => 10]],
                         'extensions' => ['debugMessage' => 'Cannot return null for non-nullable field "DataType.test".'],
                     ],
                 ],
@@ -689,12 +713,12 @@ class ListsTest extends TestCase
                 ];
             },
             [
-                'data'   => ['nest' => null],
+                'data' => ['nest' => null],
                 'errors' => [
                     [
-                        'message'   => 'bad',
+                        'message' => 'bad',
                         'locations' => [['line' => 1, 'column' => 10]],
-                        'path'      => ['nest', 'test'],
+                        'path' => ['nest', 'test'],
                     ],
                 ],
             ]

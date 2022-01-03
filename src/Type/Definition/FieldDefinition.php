@@ -9,7 +9,6 @@ use GraphQL\Executor\Executor;
 use GraphQL\Language\AST\FieldDefinitionNode;
 use GraphQL\Type\Schema;
 use GraphQL\Utils\Utils;
-
 use function is_array;
 use function is_callable;
 use function is_iterable;
@@ -17,22 +16,23 @@ use function is_string;
 
 /**
  * @phpstan-import-type FieldResolver from Executor
- * @phpstan-import-type FieldArgumentConfig from FieldArgument
+ * @phpstan-import-type ArgumentListConfig from Argument
+ * @phpstan-type FieldType (Type&OutputType)|callable(): (Type&OutputType)
  * @phpstan-type ComplexityFn callable(int, array<string, mixed>): int|null
  * @phpstan-type FieldDefinitionConfig array{
  *     name: string,
- *     type: (Type&OutputType)|callable(): (Type&OutputType),
+ *     type: FieldType,
  *     resolve?: FieldResolver|null,
- *     args?: array<string, FieldArgumentConfig|Type>|null,
+ *     args?: ArgumentListConfig|null,
  *     description?: string|null,
  *     deprecationReason?: string|null,
  *     astNode?: FieldDefinitionNode|null,
  *     complexity?: ComplexityFn|null,
  * }
  * @phpstan-type UnnamedFieldDefinitionConfig array{
- *     type: (Type&OutputType)|callable(): (Type&OutputType),
+ *     type: FieldType,
  *     resolve?: FieldResolver|null,
- *     args?: array<string, FieldArgumentConfig|Type>|null,
+ *     args?: ArgumentListConfig|null,
  *     description?: string|null,
  *     deprecationReason?: string|null,
  *     astNode?: FieldDefinitionNode|null,
@@ -44,7 +44,7 @@ class FieldDefinition
 {
     public string $name;
 
-    /** @var array<int, FieldArgument> */
+    /** @var array<int, Argument> */
     public array $args;
 
     /**
@@ -79,15 +79,15 @@ class FieldDefinition
      */
     protected function __construct(array $config)
     {
-        $this->name              = $config['name'];
-        $this->resolveFn         = $config['resolve'] ?? null;
-        $this->args              = isset($config['args'])
-            ? FieldArgument::createMap($config['args'])
+        $this->name = $config['name'];
+        $this->resolveFn = $config['resolve'] ?? null;
+        $this->args = isset($config['args'])
+            ? Argument::listFromConfig($config['args'])
             : [];
-        $this->description       = $config['description'] ?? null;
+        $this->description = $config['description'] ?? null;
         $this->deprecationReason = $config['deprecationReason'] ?? null;
-        $this->astNode           = $config['astNode'] ?? null;
-        $this->complexityFn      = $config['complexity'] ?? null;
+        $this->astNode = $config['astNode'] ?? null;
+        $this->complexityFn = $config['complexity'] ?? null;
 
         $this->config = $config;
     }
@@ -166,10 +166,9 @@ class FieldDefinition
         return new self($field);
     }
 
-    public function getArg(string $name): ?FieldArgument
+    public function getArg(string $name): ?Argument
     {
         foreach ($this->args as $arg) {
-            /** @var FieldArgument $arg */
             if ($arg->name === $name) {
                 return $arg;
             }
@@ -204,7 +203,7 @@ class FieldDefinition
     public function assertValid(Type $parentType): void
     {
         $error = Utils::isValidNameError($this->name);
-        if ($error !== null) {
+        if (null !== $error) {
             throw new InvariantViolation("{$parentType->name}.{$this->name}: {$error->getMessage()}");
         }
 
@@ -216,7 +215,7 @@ class FieldDefinition
             throw new InvariantViolation("{$parentType->name}.{$this->name} field type must be Output Type but got: {$safeType}");
         }
 
-        if ($this->resolveFn !== null && ! is_callable($this->resolveFn)) {
+        if (null !== $this->resolveFn && ! is_callable($this->resolveFn)) {
             $safeResolveFn = Utils::printSafe($this->resolveFn);
 
             throw new InvariantViolation("{$parentType->name}.{$this->name} field resolver must be a function if provided, but got: {$safeResolveFn}");

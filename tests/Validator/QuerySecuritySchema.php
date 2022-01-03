@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace GraphQL\Tests\Validator;
 
+use function array_merge;
 use GraphQL\GraphQL;
 use GraphQL\Language\DirectiveLocation;
 use GraphQL\Type\Definition\Directive;
-use GraphQL\Type\Definition\FieldArgument;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
-
-use function array_merge;
 
 class QuerySecuritySchema
 {
@@ -29,7 +27,7 @@ class QuerySecuritySchema
     public static function buildSchema(): Schema
     {
         return self::$schema ??= new Schema([
-            'query'      => static::buildQueryRootType(),
+            'query' => static::buildQueryRootType(),
             'directives' => array_merge(GraphQL::getStandardDirectives(), [static::buildFooDirective()]),
         ]);
     }
@@ -37,7 +35,7 @@ class QuerySecuritySchema
     public static function buildQueryRootType(): ObjectType
     {
         return self::$queryRootType ??= new ObjectType([
-            'name'   => 'QueryRoot',
+            'name' => 'QueryRoot',
             'fields' => [
                 'human' => [
                     'type' => self::buildHumanType(),
@@ -51,12 +49,12 @@ class QuerySecuritySchema
     {
         return self::$humanType ??= new ObjectType(
             [
-                'name'   => 'Human',
+                'name' => 'Human',
                 'fields' => static function (): array {
                     return [
                         'firstName' => ['type' => Type::nonNull(Type::string())],
-                        'dogs'      => [
-                            'type'       => Type::nonNull(
+                        'dogs' => [
+                            'type' => Type::nonNull(
                                 Type::listOf(
                                     Type::nonNull(self::buildDogType())
                                 )
@@ -66,7 +64,7 @@ class QuerySecuritySchema
 
                                 return $childrenComplexity + $complexity;
                             },
-                            'args'       => ['name' => ['type' => Type::string()]],
+                            'args' => ['name' => ['type' => Type::string()]],
                         ],
                     ];
                 },
@@ -78,9 +76,9 @@ class QuerySecuritySchema
     {
         return self::$dogType ??= new ObjectType(
             [
-                'name'   => 'Dog',
+                'name' => 'Dog',
                 'fields' => [
-                    'name'   => ['type' => Type::nonNull(Type::string())],
+                    'name' => ['type' => Type::nonNull(Type::string())],
                     'master' => [
                         'type' => self::buildHumanType(),
                     ],
@@ -92,14 +90,13 @@ class QuerySecuritySchema
     public static function buildFooDirective(): Directive
     {
         return self::$fooDirective ??= new Directive([
-            'name'      => 'foo',
+            'name' => 'foo',
             'locations' => [DirectiveLocation::FIELD],
-            'args'      => [
-                new FieldArgument([
-                    'name'         => 'bar',
-                    'type'         => Type::nonNull(Type::boolean()),
+            'args' => [
+                'bar' => [
+                    'type' => Type::nonNull(Type::boolean()),
                     'defaultValue' => ' ',
-                ]),
+                ],
             ],
         ]);
     }
