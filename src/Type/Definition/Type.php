@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type\Definition;
 
@@ -91,11 +89,11 @@ abstract class Type implements JsonSerializable
     }
 
     /**
+     * @template T of Type
+     *
      * @param T|callable():T $type
      *
      * @return ListOfType<T>
-     *
-     * @template T of Type
      *
      * @api
      */
@@ -190,10 +188,13 @@ abstract class Type implements JsonSerializable
      */
     public static function getNamedType(?Type $type): ?Type
     {
-        /** @var (Type&WrappingType)|(Type&NamedType)|null $type */
-        return $type instanceof WrappingType
-            ? $type->getInnermostType()
-            : $type;
+        if ($type instanceof WrappingType) {
+            return $type->getInnermostType();
+        }
+
+        assert(null === $type || $type instanceof NamedType, 'only other option');
+
+        return $type;
     }
 
     /**
@@ -243,10 +244,13 @@ abstract class Type implements JsonSerializable
      */
     public static function getNullableType(Type $type): Type
     {
-        /** @var (Type&NullableType)|(Type&NonNull) $type */
-        return $type instanceof NonNull
-            ? $type->getWrappedType()
-            : $type;
+        if ($type instanceof NonNull) {
+            return $type->getWrappedType();
+        }
+
+        assert($type instanceof NullableType, 'only other option');
+
+        return $type;
     }
 
     abstract public function toString(): string;

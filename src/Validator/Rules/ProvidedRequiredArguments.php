@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Validator\Rules;
 
@@ -35,14 +33,12 @@ class ProvidedRequiredArguments extends ValidationRule
 
                     foreach ($fieldDef->args as $argDef) {
                         $argNode = $argNodeMap[$argDef->name] ?? null;
-                        if (null !== $argNode || ! $argDef->isRequired()) {
-                            continue;
+                        if (null === $argNode && $argDef->isRequired()) {
+                            $context->reportError(new Error(
+                                static::missingFieldArgMessage($fieldNode->name->value, $argDef->name, $argDef->getType()->toString()),
+                                [$fieldNode]
+                            ));
                         }
-
-                        $context->reportError(new Error(
-                            static::missingFieldArgMessage($fieldNode->name->value, $argDef->name, $argDef->getType()->toString()),
-                            [$fieldNode]
-                        ));
                     }
 
                     return null;

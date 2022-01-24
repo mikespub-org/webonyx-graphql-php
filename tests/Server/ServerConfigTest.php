@@ -1,12 +1,11 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Server;
 
 use Closure;
 use GraphQL\Error\DebugFlag;
 use GraphQL\Error\InvariantViolation;
+use GraphQL\Executor\ExecutionResult;
 use GraphQL\Executor\Promise\Adapter\SyncPromiseAdapter;
 use GraphQL\Server\ServerConfig;
 use GraphQL\Type\Definition\ObjectType;
@@ -16,6 +15,10 @@ use GraphQL\Validator\Rules\UniqueEnumValueNames;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
+/**
+ * @phpstan-import-type SerializableError from ExecutionResult
+ * @phpstan-import-type SerializableErrors from ExecutionResult
+ */
 class ServerConfigTest extends TestCase
 {
     public function testDefaults(): void
@@ -87,11 +90,11 @@ class ServerConfigTest extends TestCase
     }
 
     /**
-     * @return array<string, mixed>
+     * @return SerializableError
      */
     public static function formatError(): array
     {
-        return [];
+        return ['message' => 'irrelevant'];
     }
 
     public function testAllowsSettingErrorsHandler(): void
@@ -108,7 +111,7 @@ class ServerConfigTest extends TestCase
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @return SerializableErrors
      */
     public static function handleError(): array
     {
@@ -237,12 +240,14 @@ class ServerConfigTest extends TestCase
 
     public function testInvalidValidationRules(): void
     {
-        $rules = new stdClass();
         $config = ServerConfig::create();
+        $rules = new stdClass();
 
-        $this->expectException(InvariantViolation::class);
-        $this->expectExceptionMessage('Server config expects array of validation rules or callable returning such array, but got instance of stdClass');
+        $this->expectExceptionObject(new InvariantViolation(
+            'Server config expects array of validation rules or callable returning such array, but got instance of stdClass'
+        ));
 
+        // @phpstan-ignore-next-line intentionally wrong
         $config->setValidationRules($rules);
     }
 }

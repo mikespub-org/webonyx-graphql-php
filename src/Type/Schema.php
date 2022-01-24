@@ -1,11 +1,8 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type;
 
 use Generator;
-use function get_class;
 use GraphQL\Error\Error;
 use GraphQL\Error\InvariantViolation;
 use GraphQL\GraphQL;
@@ -23,11 +20,9 @@ use GraphQL\Utils\InterfaceImplementations;
 use GraphQL\Utils\TypeInfo;
 use GraphQL\Utils\Utils;
 use function implode;
-use InvalidArgumentException;
 use function is_array;
 use function is_callable;
 use function is_iterable;
-use function sprintf;
 
 /**
  * Schema Definition (see [schema definition docs](schema-definition.md)).
@@ -189,11 +184,11 @@ class Schema
     }
 
     /**
-     * @return array<Type&NamedType>
+     * @return array<string, Type&NamedType>
      */
     private function collectAllTypes(): array
     {
-        /** @var array<Type&NamedType> $typeMap */
+        /** @var array<string, Type&NamedType> $typeMap */
         $typeMap = [];
         foreach ($this->resolvedTypes as $type) {
             TypeInfo::extractTypes($type, $typeMap);
@@ -201,11 +196,9 @@ class Schema
 
         foreach ($this->getDirectives() as $directive) {
             // @phpstan-ignore-next-line generics are not strictly enforceable, error will be caught during schema validation
-            if (! $directive instanceof Directive) {
-                continue;
+            if ($directive instanceof Directive) {
+                TypeInfo::extractTypesFromDirectives($directive, $typeMap);
             }
-
-            TypeInfo::extractTypesFromDirectives($directive, $typeMap);
         }
 
         // When types are set as array they are resolved in constructor
@@ -368,12 +361,12 @@ class Schema
     }
 
     /**
+     * @template T of Type
+     *
      * @param Type|callable $type
      * @phpstan-param T|callable():T $type
      *
      * @phpstan-return T
-     *
-     * @template T of Type
      */
     public static function resolveType($type): Type
     {
@@ -390,17 +383,21 @@ class Schema
      *
      * This operation requires full schema scan. Do not use in production environment.
      *
-     * @param InterfaceType|UnionType $abstractType
+     * @param AbstractType&Type $abstractType
      *
      * @return array<ObjectType>
      *
      * @api
      */
-    public function getPossibleTypes(Type $abstractType): array
+    public function getPossibleTypes(AbstractType $abstractType): array
     {
-        return $abstractType instanceof UnionType
-            ? $abstractType->getTypes()
-            : $this->getImplementations($abstractType)->objects();
+        if ($abstractType instanceof UnionType) {
+            return $abstractType->getTypes();
+        }
+
+        assert($abstractType instanceof InterfaceType, 'only other option');
+
+        return $this->getImplementations($abstractType)->objects();
     }
 
     /**
@@ -423,7 +420,15 @@ class Schema
         if (! isset($this->implementationsMap)) {
             $this->implementationsMap = [];
 
-            /** @var array<string, array<string, Type>> $foundImplementations */
+            /**
+             * @var array<
+             *     string,
+             *     array{
+             *         objects: array<int, ObjectType>,
+             *         interfaces: array<int, InterfaceType>,
+             *     }
+             * > $foundImplementations
+             */
             $foundImplementations = [];
             foreach ($this->getTypeMap() as $type) {
                 if ($type instanceof InterfaceType) {
@@ -460,8 +465,8 @@ class Schema
     /**
      * Returns true if the given type is a sub type of the given abstract type.
      *
-     * @param UnionType|InterfaceType  $abstractType
-     * @param ObjectType|InterfaceType $maybeSubType
+     * @param AbstractType&Type $abstractType
+     * @param ImplementingType&Type $maybeSubType
      *
      * @api
      */
@@ -471,13 +476,9 @@ class Schema
             return $maybeSubType->implementsInterface($abstractType);
         }
 
-        // @phpstan-ignore-next-line necessary until function can be type hinted with actual union type
-        if ($abstractType instanceof UnionType) {
-            return $abstractType->isPossibleType($maybeSubType);
-        }
+        assert($abstractType instanceof UnionType, 'only other option');
 
-        // @phpstan-ignore-next-line necessary until function can be type hinted with actual union type
-        throw new InvalidArgumentException('$abstractType must be of type UnionType|InterfaceType got: ' . get_class($abstractType) . '.');
+        return $abstractType->isPossibleType($maybeSubType);
     }
 
     /**
@@ -527,17 +528,12 @@ class Schema
             $type->assertValid();
 
             // Make sure type loader returns the same instance as registered in other places of schema
-            if (null === $this->config->typeLoader) {
-                continue;
+            if (isset($this->config->typeLoader)) {
+                Utils::invariant(
+                    $this->loadType($name) === $type,
+                    "Type loader returns different instance for {$name} than field/argument definitions. Make sure you always return the same instance for the same type name."
+                );
             }
-
-            Utils::invariant(
-                $this->loadType($name) === $type,
-                sprintf(
-                    'Type loader returns different instance for %s than field/argument definitions. Make sure you always return the same instance for the same type name.',
-                    $name
-                )
-            );
         }
     }
 

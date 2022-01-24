@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Error;
 
@@ -71,7 +69,7 @@ class Error extends Exception implements JsonSerializable, ClientAware, Provides
     protected ?array $extensions;
 
     /**
-     * @param iterable<array-key, Node>|Node|null $nodes
+     * @param iterable<array-key, Node|null>|Node|null $nodes
      * @param array<int, int>|null                $positions
      * @param array<int, int|string>|null         $path
      * @param array<string, mixed>|null           $extensions
@@ -89,9 +87,9 @@ class Error extends Exception implements JsonSerializable, ClientAware, Provides
 
         // Compute list of blame nodes.
         if ($nodes instanceof Traversable) {
-            $this->nodes = iterator_to_array($nodes);
+            $this->nodes = array_filter(iterator_to_array($nodes));
         } elseif (is_array($nodes)) {
-            $this->nodes = $nodes;
+            $this->nodes = array_filter($nodes);
         } elseif (null !== $nodes) {
             $this->nodes = [$nodes];
         } else {
@@ -160,7 +158,7 @@ class Error extends Exception implements JsonSerializable, ClientAware, Provides
             $message = (string) $error;
         }
 
-        $nonEmptyMessage = '' === $message || null === $message
+        $nonEmptyMessage = '' === $message
             ? 'An unknown error occurred.'
             : $message;
 
@@ -208,12 +206,9 @@ class Error extends Exception implements JsonSerializable, ClientAware, Provides
 
             if (isset($this->nodes)) {
                 foreach ($this->nodes as $node) {
-                    $start = $node->loc->start ?? null;
-                    if (null === $start) {
-                        continue;
+                    if (isset($node->loc->start)) {
+                        $this->positions[] = $node->loc->start;
                     }
-
-                    $this->positions[] = $start;
                 }
             }
         }
@@ -250,11 +245,9 @@ class Error extends Exception implements JsonSerializable, ClientAware, Provides
                 }
             } elseif (null !== $nodes && 0 !== count($nodes)) {
                 foreach ($nodes as $node) {
-                    if (! isset($node->loc->source)) {
-                        continue;
+                    if (isset($node->loc->source)) {
+                        $this->locations[] = $node->loc->source->getLocation($node->loc->start);
                     }
-
-                    $this->locations[] = $node->loc->source->getLocation($node->loc->start);
                 }
             }
         }

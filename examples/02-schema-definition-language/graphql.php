@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 // Run local test server
 // php -S localhost:8080 graphql.php
@@ -33,6 +31,10 @@ try {
     ];
 
     $rawInput = file_get_contents('php://input');
+    if (false === $rawInput) {
+        throw new RuntimeException('Failed to get php://input');
+    }
+
     $input = json_decode($rawInput, true);
     $query = $input['query'];
     $variableValues = $input['variables'] ?? null;

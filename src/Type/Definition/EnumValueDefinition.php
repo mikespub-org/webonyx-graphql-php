@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type\Definition;
 
@@ -28,11 +26,11 @@ class EnumValueDefinition
 
     public ?EnumValueDefinitionNode $astNode;
 
-    /** @var array<string, mixed> */
-    public $config;
+    /** @phpstan-var EnumValueConfig */
+    public array $config;
 
     /**
-     * @param array<string, mixed> $config
+     * @phpstan-param EnumValueConfig $config
      */
     public function __construct(array $config)
     {

@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Executor;
 
@@ -21,7 +19,12 @@ use Throwable;
  * Could be converted to [spec-compliant](https://facebook.github.io/graphql/#sec-Response-Format)
  * serializable array using `toArray()`.
  *
- * @phpstan-type SerializableError array<string, mixed>
+ * @phpstan-type SerializableError array{
+ *   message: string,
+ *   locations?: array<int, array{line: int, column: int}>,
+ *   path?: array<int, int|string>,
+ *   extensions?: array<string, mixed>,
+ * }
  * @phpstan-type SerializableErrors array<int, SerializableError>
  * @phpstan-type SerializableResult array{
  *     data?: array<string, mixed>,

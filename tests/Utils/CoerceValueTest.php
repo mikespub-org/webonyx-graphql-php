@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Utils;
 
@@ -71,11 +69,11 @@ class CoerceValueTest extends TestCase
         $result = Value::coerceValue([1, 2, 3], Type::id());
         $this->expectGraphQLError(
             $result,
-            'Expected type ID; ID cannot represent value: [1,2,3]'
+            'Expected type ID; ID cannot represent a non-string and non-integer value: [1,2,3]'
         );
 
         self::assertEquals(
-            'ID cannot represent value: [1,2,3]',
+            'ID cannot represent a non-string and non-integer value: [1,2,3]',
             $result['errors'][0]->getPrevious()->getMessage()
         );
     }

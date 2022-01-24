@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Language\AST;
 
@@ -10,8 +8,8 @@ use GraphQL\Language\AST\NonNullTypeNode;
 use GraphQL\Language\Parser;
 use GraphQL\Utils\AST;
 use function json_decode;
-use function json_encode;
 use PHPUnit\Framework\TestCase;
+use function Safe\json_encode;
 
 class NodeTest extends TestCase
 {

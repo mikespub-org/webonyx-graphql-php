@@ -1,12 +1,12 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Validator;
 
 use function array_map;
 use GraphQL\Error\Error;
 use GraphQL\Error\FormattedError;
+use GraphQL\Error\UserError;
+use GraphQL\Language\AST\Node;
 use GraphQL\Language\DirectiveLocation;
 use GraphQL\Language\Parser;
 use GraphQL\Type\Definition\CustomScalarType;
@@ -307,11 +307,11 @@ abstract class ValidatorTestCase extends TestCase
             'serialize' => static function ($value) {
                 return $value;
             },
-            'parseLiteral' => static function ($node): void {
-                throw new Error('Invalid scalar is always invalid: ' . $node->value);
+            'parseLiteral' => static function (Node $node): void {
+                throw new UserError('Invalid scalar is always invalid: ' . $node->value);
             },
             'parseValue' => static function ($node): void {
-                throw new Error('Invalid scalar is always invalid: ' . $node);
+                throw new UserError('Invalid scalar is always invalid: ' . $node);
             },
         ]);
 
@@ -373,15 +373,20 @@ abstract class ValidatorTestCase extends TestCase
                 Directive::deprecatedDirective(),
                 new Directive([
                     'name' => 'directive',
-                    'locations' => [DirectiveLocation::FIELD],
+                    'locations' => [DirectiveLocation::FIELD, DirectiveLocation::FRAGMENT_DEFINITION],
                 ]),
                 new Directive([
                     'name' => 'directiveA',
-                    'locations' => [DirectiveLocation::FIELD],
+                    'locations' => [DirectiveLocation::FIELD, DirectiveLocation::FRAGMENT_DEFINITION],
                 ]),
                 new Directive([
                     'name' => 'directiveB',
-                    'locations' => [DirectiveLocation::FIELD],
+                    'locations' => [DirectiveLocation::FIELD, DirectiveLocation::FRAGMENT_DEFINITION],
+                ]),
+                new Directive([
+                    'name' => 'repeatable',
+                    'locations' => [DirectiveLocation::FIELD, DirectiveLocation::FRAGMENT_DEFINITION],
+                    'isRepeatable' => true,
                 ]),
                 new Directive([
                     'name' => 'onQuery',

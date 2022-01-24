@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL;
 
@@ -130,18 +128,15 @@ class GraphQL
                 ? $source
                 : Parser::parse(new Source($source, 'GraphQL'));
 
-            // TODO this could be more elegant
-            if (0 === count($validationRules ?? [])) {
-                /** @var QueryComplexity $queryComplexity */
+            if (null === $validationRules || 0 === count($validationRules)) {
                 $queryComplexity = DocumentValidator::getRule(QueryComplexity::class);
+                assert($queryComplexity instanceof QueryComplexity, 'should not register a different rule for QueryComplexity');
                 $queryComplexity->setRawVariableValues($variableValues);
             } else {
                 foreach ($validationRules as $rule) {
-                    if (! ($rule instanceof QueryComplexity)) {
-                        continue;
+                    if ($rule instanceof QueryComplexity) {
+                        $rule->setRawVariableValues($variableValues);
                     }
-
-                    $rule->setRawVariableValues($variableValues);
                 }
             }
 

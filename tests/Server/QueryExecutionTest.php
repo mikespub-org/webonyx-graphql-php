@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Server;
 
@@ -73,7 +71,10 @@ class QueryExecutionTest extends ServerTestCase
             $readonly
         );
 
-        return (new Helper())->executeOperation($this->config, $op);
+        $result = (new Helper())->executeOperation($this->config, $op);
+        self::assertInstanceOf(ExecutionResult::class, $result);
+
+        return $result;
     }
 
     public function testReturnsSyntaxErrors(): void
@@ -292,7 +293,10 @@ class QueryExecutionTest extends ServerTestCase
             'variables' => $variables,
         ]);
 
-        return (new Helper())->executeOperation($this->config, $op);
+        $result = (new Helper())->executeOperation($this->config, $op);
+        self::assertInstanceOf(ExecutionResult::class, $result);
+
+        return $result;
     }
 
     public function testBatchedQueriesAreDisabledByDefault(): void
@@ -638,11 +642,12 @@ class QueryExecutionTest extends ServerTestCase
     {
         $called = false;
         $error = null;
-        $this->config->setErrorFormatter(static function ($e) use (&$called, &$error): array {
+        $formattedError = ['message' => 'formatted'];
+        $this->config->setErrorFormatter(static function ($e) use (&$called, &$error, $formattedError): array {
             $called = true;
             $error = $e;
 
-            return ['test' => 'formatted'];
+            return $formattedError;
         });
 
         $result = $this->executeQuery('{fieldWithSafeException}');
@@ -650,7 +655,7 @@ class QueryExecutionTest extends ServerTestCase
         $formatted = $result->toArray();
         $expected = [
             'errors' => [
-                ['test' => 'formatted'],
+                $formattedError,
             ],
         ];
         self::assertTrue($called);
@@ -661,12 +666,14 @@ class QueryExecutionTest extends ServerTestCase
         $formatted = $result->toArray(DebugFlag::INCLUDE_TRACE);
         $expected = [
             'errors' => [
-                [
-                    'test' => 'formatted',
-                    'extensions' => [
-                        'trace' => [],
+                array_merge(
+                    $formattedError,
+                    [
+                        'extensions' => [
+                            'trace' => [],
+                        ],
                     ],
-                ],
+                ),
             ],
         ];
         self::assertArraySubset($expected, $formatted);
@@ -677,14 +684,15 @@ class QueryExecutionTest extends ServerTestCase
         $called = false;
         $errors = null;
         $formatter = null;
-        $this->config->setErrorsHandler(static function ($e, $f) use (&$called, &$errors, &$formatter): array {
+        $handledErrors = [
+            ['message' => 'handled'],
+        ];
+        $this->config->setErrorsHandler(static function ($e, $f) use (&$called, &$errors, &$formatter, $handledErrors): array {
             $called = true;
             $errors = $e;
             $formatter = $f;
 
-            return [
-                ['test' => 'handled'],
-            ];
+            return $handledErrors;
         });
 
         $result = $this->executeQuery('{fieldWithSafeException,test: fieldWithSafeException}');
@@ -692,9 +700,7 @@ class QueryExecutionTest extends ServerTestCase
         self::assertFalse($called);
         $formatted = $result->toArray();
         $expected = [
-            'errors' => [
-                ['test' => 'handled'],
-            ],
+            'errors' => $handledErrors,
         ];
         self::assertTrue($called);
         self::assertArraySubset($expected, $formatted);

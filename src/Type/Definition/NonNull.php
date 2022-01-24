@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type\Definition;
 
@@ -36,7 +34,6 @@ class NonNull extends Type implements WrappingType, OutputType, InputType
      */
     public function getWrappedType(): Type
     {
-        // @phpstan-ignore-next-line generics in Schema::resolveType() are not recognized correctly
         return Schema::resolveType($this->wrappedType);
     }
 
@@ -47,7 +44,8 @@ class NonNull extends Type implements WrappingType, OutputType, InputType
             $type = $type->getWrappedType();
         }
 
-        /** @var Type&NamedType $type known because we unwrapped all the way down */
+        assert($type instanceof NamedType, 'known because we unwrapped all the way down');
+
         return $type;
     }
 }

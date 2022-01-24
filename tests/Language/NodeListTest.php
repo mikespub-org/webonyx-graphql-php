@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Language;
 
@@ -19,6 +17,27 @@ final class NodeListTest extends TestCase
         $nodeList = new NodeList([$key => $nameNode->toArray()]);
 
         self::assertEquals($nameNode, $nodeList[$key]);
+    }
+
+    public function testCloneDeep(): void
+    {
+        $nameNode = new NameNode(['value' => 'bar']);
+
+        $nodeList = new NodeList([
+            'array' => $nameNode->toArray(),
+            'instance' => $nameNode,
+        ]);
+
+        $cloned = $nodeList->cloneDeep();
+
+        self::assertNotSameButEquals($nodeList['array'], $cloned['array']);
+        self::assertNotSameButEquals($nodeList['instance'], $cloned['instance']);
+    }
+
+    private static function assertNotSameButEquals(object $node, object $clone): void
+    {
+        self::assertNotSame($node, $clone);
+        self::assertEquals($node, $clone);
     }
 
     public function testThrowsOnInvalidArrays(): void

@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests;
 
@@ -90,6 +88,7 @@ class StarWarsSchema
 
         /** @var ObjectType $humanType */
         $humanType = null;
+
         /** @var ObjectType $humanType */
         $droidType = null;
 

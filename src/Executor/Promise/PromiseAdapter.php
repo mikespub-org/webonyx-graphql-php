@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Executor\Promise;
 
@@ -23,7 +21,7 @@ interface PromiseAdapter
     /**
      * Converts thenable of the underlying platform into GraphQL\Executor\Promise\Promise instance.
      *
-     * @param object $thenable
+     * @param mixed $thenable
      *
      * @api
      */

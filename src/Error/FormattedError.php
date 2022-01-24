@@ -1,12 +1,9 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Error;
 
 use function addcslashes;
 use function array_filter;
-use function array_intersect_key;
 use function array_map;
 use function array_merge;
 use function array_shift;
@@ -16,7 +13,6 @@ use ErrorException;
 use function get_class;
 use function gettype;
 use GraphQL\Executor\ExecutionResult;
-use GraphQL\Language\AST\Node;
 use GraphQL\Language\Source;
 use GraphQL\Language\SourceLocation;
 use GraphQL\Type\Definition\Type;
@@ -37,12 +33,7 @@ use Throwable;
  * It converts PHP exceptions to [spec-compliant errors](https://facebook.github.io/graphql/#sec-Errors)
  * and provides tools for error debugging.
  *
- * @phpstan-type FormattedErrorArray array{
- *   message: string,
- *   locations?: array<int, array{line: int, column: int}>,
- *   path?: array<int, int|string>,
- *   extensions?: array<string, mixed>,
- * }
+ * @phpstan-import-type SerializableError from ExecutionResult
  * @phpstan-import-type ErrorFormatter from ExecutionResult
  */
 class FormattedError
@@ -67,21 +58,18 @@ class FormattedError
     public static function printError(Error $error): string
     {
         $printedLocations = [];
-        if (0 !== count($error->nodes ?? [])) {
-            /** @var Node $node */
-            foreach ($error->nodes as $node) {
-                if (null === $node->loc) {
-                    continue;
-                }
 
-                if (null === $node->loc->source) {
-                    continue;
+        $nodes = $error->nodes;
+        if (isset($nodes) && count($nodes) > 0) {
+            foreach ($nodes as $node) {
+                if (isset($node->loc->source)) {
+                    $location = $node->loc;
+                    $source = $location->source;
+                    $printedLocations[] = self::highlightSourceAtLocation(
+                        $source,
+                        $source->getLocation($location->start)
+                    );
                 }
-
-                $printedLocations[] = self::highlightSourceAtLocation(
-                    $node->loc->source,
-                    $node->loc->source->getLocation($node->loc->start)
-                );
             }
         } elseif (null !== $error->getSource() && 0 !== count($error->getLocations())) {
             $source = $error->getSource();
@@ -110,7 +98,9 @@ class FormattedError
         $lineNum = (string) $contextLine;
         $nextLineNum = (string) ($contextLine + 1);
         $padLen = strlen($nextLineNum);
+
         $lines = preg_split('/\r\n|[\n\r]/', $source->body);
+        assert(is_array($lines), 'given the regex is valid');
 
         $lines[0] = self::whitespace($source->locationOffset->column - 1) . $lines[0];
 
@@ -150,7 +140,7 @@ class FormattedError
      *
      * For a list of available debug flags @see \GraphQL\Error\DebugFlag constants.
      *
-     * @return FormattedErrorArray
+     * @return SerializableError
      *
      * @api
      */
@@ -195,10 +185,10 @@ class FormattedError
     /**
      * Decorates spec-compliant $formattedError with debug entries according to $debug flags.
      *
-     * @param int                 $debugFlag      For available flags @see \GraphQL\Error\DebugFlag
-     * @param FormattedErrorArray $formattedError
+     * @param SerializableError $formattedError
+     * @param int $debugFlag For available flags @see \GraphQL\Error\DebugFlag
      *
-     * @return FormattedErrorArray
+     * @return SerializableError
      */
     public static function addDebugEntries(array $formattedError, Throwable $e, int $debugFlag): array
     {
@@ -264,8 +254,8 @@ class FormattedError
      * Returns error trace as serializable array.
      *
      * @return array<int, array{
-     *     file: string,
-     *     line: int,
+     *     file?: string,
+     *     line?: int,
      *     function?: string,
      *     call?: string,
      * }>
@@ -287,26 +277,34 @@ class FormattedError
             array_shift($trace);
         }
 
-        return array_map(
-            static function (array $err): array {
-                $safeErr = array_intersect_key($err, ['file' => true, 'line' => true]);
+        $formatted = [];
+        foreach ($trace as $err) {
+            $safeErr = [];
 
-                if (isset($err['function'])) {
-                    $func = $err['function'];
-                    $args = array_map([self::class, 'printVar'], $err['args'] ?? []);
-                    $funcStr = $func . '(' . implode(', ', $args) . ')';
+            if (isset($err['file'])) {
+                $safeErr['file'] = $err['file'];
+            }
 
-                    if (isset($err['class'])) {
-                        $safeErr['call'] = $err['class'] . '::' . $funcStr;
-                    } else {
-                        $safeErr['function'] = $funcStr;
-                    }
+            if (isset($err['line'])) {
+                $safeErr['line'] = $err['line'];
+            }
+
+            if (isset($err['function'])) {
+                $func = $err['function'];
+                $args = array_map([self::class, 'printVar'], $err['args'] ?? []);
+                $funcStr = $func . '(' . implode(', ', $args) . ')';
+
+                if (isset($err['class'])) {
+                    $safeErr['call'] = $err['class'] . '::' . $funcStr;
+                } else {
+                    $safeErr['function'] = $funcStr;
                 }
+            }
 
-                return $safeErr;
-            },
-            $trace
-        );
+            $formatted[] = $safeErr;
+        }
+
+        return $formatted;
     }
 
     /**

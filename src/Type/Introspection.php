@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type;
 
@@ -160,7 +158,7 @@ EOD;
     }
 
     /**
-     * @param Type &NamedType $type
+     * @param Type&NamedType $type
      */
     public static function isIntrospectionType(NamedType $type): bool
     {
@@ -676,7 +674,7 @@ EOD;
 
     public static function schemaMetaFieldDef(): FieldDefinition
     {
-        return self::$map[self::SCHEMA_FIELD_NAME] ??= FieldDefinition::create([
+        return self::$map[self::SCHEMA_FIELD_NAME] ??= new FieldDefinition([
             'name' => self::SCHEMA_FIELD_NAME,
             'type' => Type::nonNull(self::_schema()),
             'description' => 'Access the current type schema of this server.',
@@ -687,7 +685,7 @@ EOD;
 
     public static function typeMetaFieldDef(): FieldDefinition
     {
-        return self::$map[self::TYPE_FIELD_NAME] ??= FieldDefinition::create([
+        return self::$map[self::TYPE_FIELD_NAME] ??= new FieldDefinition([
             'name' => self::TYPE_FIELD_NAME,
             'type' => self::_type(),
             'description' => 'Request the type information of a single type.',
@@ -703,7 +701,7 @@ EOD;
 
     public static function typeNameMetaFieldDef(): FieldDefinition
     {
-        return self::$map[self::TYPE_NAME_FIELD_NAME] ??= FieldDefinition::create([
+        return self::$map[self::TYPE_NAME_FIELD_NAME] ??= new FieldDefinition([
             'name' => self::TYPE_NAME_FIELD_NAME,
             'type' => Type::nonNull(Type::string()),
             'description' => 'The name of the current Object type at runtime.',

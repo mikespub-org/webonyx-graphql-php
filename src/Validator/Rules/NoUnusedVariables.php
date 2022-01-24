@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Validator\Rules;
 
@@ -12,7 +10,7 @@ use GraphQL\Validator\ValidationContext;
 
 class NoUnusedVariables extends ValidationRule
 {
-    /** @var VariableDefinitionNode[] */
+    /** @var array<int, VariableDefinitionNode> */
     protected array $variableDefs;
 
     public function getVisitor(ValidationContext $context): array
@@ -39,14 +37,12 @@ class NoUnusedVariables extends ValidationRule
                     foreach ($this->variableDefs as $variableDef) {
                         $variableName = $variableDef->variable->name->value;
 
-                        if ($variableNameUsed[$variableName] ?? false) {
-                            continue;
+                        if (! isset($variableNameUsed[$variableName])) {
+                            $context->reportError(new Error(
+                                static::unusedVariableMessage($variableName, $opName),
+                                [$variableDef]
+                            ));
                         }
-
-                        $context->reportError(new Error(
-                            static::unusedVariableMessage($variableName, $opName),
-                            [$variableDef]
-                        ));
                     }
                 },
             ],

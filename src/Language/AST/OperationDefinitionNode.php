@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Language\AST;
 
@@ -10,7 +8,9 @@ class OperationDefinitionNode extends Node implements ExecutableDefinitionNode, 
 
     public ?NameNode $name = null;
 
-    /** @var string (oneOf 'query', 'mutation', 'subscription')) */
+    /**
+     * @var 'query'|'mutation'|'subscription'
+     */
     public string $operation;
 
     /** @var NodeList<VariableDefinitionNode> */

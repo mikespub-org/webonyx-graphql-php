@@ -1,10 +1,7 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Language;
 
-use function file_get_contents;
 use GraphQL\Language\AST\FieldNode;
 use GraphQL\Language\AST\NameNode;
 use GraphQL\Language\AST\NodeList;
@@ -13,6 +10,7 @@ use GraphQL\Language\Printer;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Utils\AST;
 use PHPUnit\Framework\TestCase;
+use function Safe\file_get_contents;
 
 class PrinterTest extends TestCase
 {

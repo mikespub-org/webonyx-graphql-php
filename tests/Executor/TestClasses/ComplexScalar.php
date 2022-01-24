@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Executor\TestClasses;
 
@@ -39,10 +37,14 @@ class ComplexScalar extends ScalarType
 
     public function parseLiteral(Node $valueNode, ?array $variables = null): string
     {
-        if ('SerializedValue' === $valueNode->value) {
+        $value = property_exists($valueNode, 'value')
+            ? $valueNode->value
+            : null;
+
+        if ('SerializedValue' === $value) {
             return 'DeserializedValue';
         }
 
-        throw new Error('Cannot represent literal as ComplexScalar: ' . Utils::printSafe($valueNode->value));
+        throw new Error('Cannot represent literal as ComplexScalar: ' . Utils::printSafe($value));
     }
 }

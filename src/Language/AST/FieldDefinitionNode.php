@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Language\AST;
 
@@ -8,18 +6,16 @@ class FieldDefinitionNode extends Node
 {
     public string $kind = NodeKind::FIELD_DEFINITION;
 
-    /** @var NameNode */
-    public $name;
+    public NameNode $name;
 
     /** @var NodeList<InputValueDefinitionNode> */
-    public $arguments;
+    public NodeList $arguments;
 
     /** @var NamedTypeNode|ListTypeNode|NonNullTypeNode */
-    public $type;
+    public TypeNode $type;
 
     /** @var NodeList<DirectiveNode> */
-    public $directives;
+    public NodeList $directives;
 
-    /** @var StringValueNode|null */
-    public $description;
+    public ?StringValueNode $description = null;
 }

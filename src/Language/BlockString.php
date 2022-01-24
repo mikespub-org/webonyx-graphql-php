@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Language;
 
@@ -26,6 +24,7 @@ class BlockString
     {
         // Expand a block string's raw value into independent lines.
         $lines = preg_split('/\\r\\n|[\\n\\r]/', $rawString);
+        assert(is_array($lines), 'given the regex is valid');
 
         // Remove common indentation from all lines but first.
         $commonIndent = self::getIndentation($rawString);

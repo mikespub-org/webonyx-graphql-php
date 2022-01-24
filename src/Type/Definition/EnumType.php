@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type\Definition;
 
@@ -11,6 +9,7 @@ use GraphQL\Language\AST\EnumTypeDefinitionNode;
 use GraphQL\Language\AST\EnumTypeExtensionNode;
 use GraphQL\Language\AST\EnumValueNode;
 use GraphQL\Language\AST\Node;
+use GraphQL\Language\Printer;
 use GraphQL\Utils\MixedStore;
 use GraphQL\Utils\Utils;
 use function is_array;
@@ -164,20 +163,26 @@ class EnumType extends Type implements InputType, OutputType, LeafType, Nullable
 
     public function parseLiteral(Node $valueNode, ?array $variables = null)
     {
-        if ($valueNode instanceof EnumValueNode) {
-            $name = $valueNode->value;
-
-            if (! isset($this->nameLookup)) {
-                $this->initializeNameLookup();
-            }
-
-            if (isset($this->nameLookup[$name])) {
-                return $this->nameLookup[$name]->value;
-            }
+        if (! $valueNode instanceof EnumValueNode) {
+            $valueStr = Printer::doPrint($valueNode);
+            throw new Error(
+                "Enum \"{$this->name}\" cannot represent non-enum value: {$valueStr}.{$this->didYouMean($valueStr)}",
+                $valueNode
+            );
         }
 
-        // Intentionally without message, as all information already in wrapped Exception
-        throw new Error();
+        $name = $valueNode->value;
+
+        if (! isset($this->nameLookup)) {
+            $this->initializeNameLookup();
+        }
+
+        if (isset($this->nameLookup[$name])) {
+            return $this->nameLookup[$name]->value;
+        }
+
+        $valueStr = Printer::doPrint($valueNode);
+        throw new Error("Value \"{$valueStr}\" does not exist in \"{$this->name}\" enum.{$this->didYouMean($valueStr)}", $valueNode);
     }
 
     /**
@@ -204,5 +209,20 @@ class EnumType extends Type implements InputType, OutputType, LeafType, Nullable
         foreach ($this->getValues() as $value) {
             $this->nameLookup[$value->name] = $value;
         }
+    }
+
+    protected function didYouMean(string $unknownValue): ?string
+    {
+        $suggestions = Utils::suggestionList(
+            $unknownValue,
+            array_map(
+                static fn (EnumValueDefinition $value): string => $value->name,
+                $this->getValues()
+            )
+        );
+
+        return [] === $suggestions
+            ? null
+            : ' Did you mean the enum value ' . Utils::quotedOrList($suggestions) . '?';
     }
 }

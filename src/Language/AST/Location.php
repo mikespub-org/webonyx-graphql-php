@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Language\AST;
 
@@ -28,17 +26,17 @@ class Location
     /**
      * The Token at which this Node begins.
      */
-    public ?Token $startToken;
+    public ?Token $startToken = null;
 
     /**
      * The Token at which this Node ends.
      */
-    public ?Token $endToken;
+    public ?Token $endToken = null;
 
     /**
      * The Source document the AST represents.
      */
-    public ?Source $source;
+    public ?Source $source = null;
 
     public static function create(int $start, int $end): self
     {

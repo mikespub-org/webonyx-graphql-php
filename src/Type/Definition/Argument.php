@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type\Definition;
 
@@ -12,7 +10,6 @@ use GraphQL\Utils\Utils;
 use function is_array;
 
 /**
- * @phpstan-import-type InputTypeAlias from InputType
  * @phpstan-type ArgumentType (Type&InputType)|callable(): (Type&InputType)
  * @phpstan-type UnnamedArgumentConfig array{
  *     name?: string,
@@ -44,7 +41,7 @@ class Argument
 
     public ?InputValueDefinitionNode $astNode;
 
-    /** @var ArgumentConfig */
+    /** @phpstan-var ArgumentConfig */
     public array $config;
 
     /**
@@ -83,7 +80,6 @@ class Argument
 
     /**
      * @return Type&InputType
-     * @phpstan-return InputTypeAlias
      */
     public function getType(): Type
     {
@@ -107,7 +103,7 @@ class Argument
     }
 
     /**
-     * @param Type &NamedType $parentType
+     * @param Type&NamedType $parentType
      */
     public function assertValid(FieldDefinition $parentField, Type $parentType): void
     {

@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Utils;
 
@@ -13,13 +11,13 @@ use GraphQL\Type\Definition\CustomScalarType;
 use GraphQL\Type\Definition\Directive;
 use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\FieldDefinition;
+use GraphQL\Type\Definition\InputObjectField;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\InputType;
 use GraphQL\Type\Definition\InterfaceType;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NamedType;
 use GraphQL\Type\Definition\NonNull;
-use GraphQL\Type\Definition\NullableType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\OutputType;
 use GraphQL\Type\Definition\ScalarType;
@@ -33,6 +31,7 @@ use function json_encode;
 
 /**
  * @phpstan-import-type UnnamedFieldDefinitionConfig from FieldDefinition
+ * @phpstan-import-type UnnamedInputObjectFieldConfig from InputObjectField
  * @phpstan-type Options array{
  *   assumeValid?: bool,
  * }
@@ -113,6 +112,9 @@ class BuildClientSchema
             }
 
             $name = $typeIntrospection['name'];
+            if (! is_string($name)) {
+                throw self::invalidOrIncompleteIntrospectionResult($typeIntrospection);
+            }
 
             // Use the built-in singleton types to avoid reconstruction
             $this->typeMap[$name] = $builtInTypes[$name]
@@ -168,10 +170,8 @@ class BuildClientSchema
                     throw new InvariantViolation('Decorated type deeper than introspection query.');
                 }
 
-                /** @var NullableType $nullableType */
-                $nullableType = $this->getType($typeRef['ofType']);
-
-                return new NonNull($nullableType);
+                // @phpstan-ignore-next-line if the type is not a nullable type, schema validation will catch it
+                return new NonNull($this->getType($typeRef['ofType']));
             }
         }
 
@@ -368,7 +368,7 @@ class BuildClientSchema
     }
 
     /**
-     * @param array<string, string|array<string>> $union
+     * @param array<string, mixed> $union
      */
     private function buildUnionDef(array $union): UnionType
     {
@@ -387,7 +387,7 @@ class BuildClientSchema
     }
 
     /**
-     * @param array<string, string|array<string, string>> $enum
+     * @param array<string, mixed> $enum
      */
     private function buildEnumDef(array $enum): EnumType
     {
@@ -439,6 +439,7 @@ class BuildClientSchema
             throw new InvariantViolation('Introspection result missing fields: ' . json_encode($typeIntrospection) . '.');
         }
 
+        /** @var array<string, UnnamedFieldDefinitionConfig> $map */
         $map = [];
         foreach ($typeIntrospection['fields'] as $field) {
             if (! array_key_exists('args', $field)) {
@@ -453,28 +454,31 @@ class BuildClientSchema
             ];
         }
 
+        // @phpstan-ignore-next-line unless the returned name was numeric, this works
         return $map;
     }
 
     /**
      * @param array<int, array<string, mixed>> $inputValueIntrospections
      *
-     * @return array<string, array<string, mixed>>
+     * @return array<string, UnnamedInputObjectFieldConfig>
      */
     private function buildInputValueDefMap(array $inputValueIntrospections): array
     {
+        /** @var array<string, UnnamedInputObjectFieldConfig> $map */
         $map = [];
         foreach ($inputValueIntrospections as $value) {
             $map[$value['name']] = $this->buildInputValue($value);
         }
 
+        // @phpstan-ignore-next-line unless the returned name was numeric, this works
         return $map;
     }
 
     /**
      * @param array<string, mixed> $inputValueIntrospection
      *
-     * @return array<string, mixed>
+     * @return UnnamedInputObjectFieldConfig
      */
     public function buildInputValue(array $inputValueIntrospection): array
     {

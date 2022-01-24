@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Executor;
 
@@ -36,7 +34,10 @@ class ExecutionContext
     /** @var array<string, mixed> */
     public array $variableValues;
 
-    /** @var FieldResolver */
+    /**
+     * @var callable
+     * @phpstan-var FieldResolver
+     */
     public $fieldResolver;
 
     /** @var array<int, Error> */

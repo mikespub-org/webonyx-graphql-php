@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Executor;
 
@@ -277,8 +275,11 @@ class ExecutorLazySchemaTest extends TestCase
                     'interfaces' => function (): array {
                         $this->calls[] = 'SomeObject.interfaces';
 
+                        /** @var InterfaceType $someInterface */
+                        $someInterface = $this->loadType('SomeInterface');
+
                         return [
-                            $this->loadType('SomeInterface'),
+                            $someInterface,
                         ];
                     },
                 ]);
@@ -289,9 +290,14 @@ class ExecutorLazySchemaTest extends TestCase
                     'fields' => function (): array {
                         $this->calls[] = 'OtherObject.fields';
 
+                        /** @var UnionType $someUnion */
+                        $someUnion = $this->loadType('SomeUnion');
+                        /** @var InterfaceType $someInterface */
+                        $someInterface = $this->loadType('SomeInterface');
+
                         return [
-                            'union' => ['type' => $this->loadType('SomeUnion')],
-                            'iface' => ['type' => Type::nonNull($this->loadType('SomeInterface'))],
+                            'union' => ['type' => $someUnion],
+                            'iface' => ['type' => Type::nonNull($someInterface)],
                         ];
                     },
                 ]);
@@ -318,12 +324,18 @@ class ExecutorLazySchemaTest extends TestCase
                     'resolveType' => function () {
                         $this->calls[] = 'SomeUnion.resolveType';
 
-                        return $this->loadType('DeeperObject');
+                        /** @var ObjectType $deeperObject */
+                        $deeperObject = $this->loadType('DeeperObject');
+
+                        return $deeperObject;
                     },
                     'types' => function (): array {
                         $this->calls[] = 'SomeUnion.types';
 
-                        return [$this->loadType('DeeperObject')];
+                        /** @var ObjectType $deeperObject */
+                        $deeperObject = $this->loadType('DeeperObject');
+
+                        return [$deeperObject];
                     },
                 ]);
 
@@ -333,7 +345,10 @@ class ExecutorLazySchemaTest extends TestCase
                     'resolveType' => function () {
                         $this->calls[] = 'SomeInterface.resolveType';
 
-                        return $this->loadType('SomeObject');
+                        /** @var ObjectType $someObject */
+                        $someObject = $this->loadType('SomeObject');
+
+                        return $someObject;
                     },
                     'fields' => function (): array {
                         $this->calls[] = 'SomeInterface.fields';

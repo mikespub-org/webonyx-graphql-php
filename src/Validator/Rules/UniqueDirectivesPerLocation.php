@@ -1,12 +1,9 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Validator\Rules;
 
 use GraphQL\Error\Error;
 use GraphQL\Language\AST\DirectiveDefinitionNode;
-use GraphQL\Language\AST\DirectiveNode;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\Visitor;
 use GraphQL\Type\Definition\Directive;
@@ -39,6 +36,7 @@ class UniqueDirectivesPerLocation extends ValidationRule
      */
     public function getASTVisitor(ASTValidationContext $context): array
     {
+        /** @var array<string, true> $uniqueDirectiveMap */
         $uniqueDirectiveMap = [];
 
         $schema = $context->getSchema();
@@ -46,16 +44,18 @@ class UniqueDirectivesPerLocation extends ValidationRule
             ? $schema->getDirectives()
             : Directive::getInternalDirectives();
         foreach ($definedDirectives as $directive) {
-            $uniqueDirectiveMap[$directive->name] = ! $directive->isRepeatable;
+            if (! $directive->isRepeatable) {
+                $uniqueDirectiveMap[$directive->name] = true;
+            }
         }
 
         $astDefinitions = $context->getDocument()->definitions;
         foreach ($astDefinitions as $definition) {
-            if (! ($definition instanceof DirectiveDefinitionNode)) {
-                continue;
+            if ($definition instanceof DirectiveDefinitionNode
+                && ! $definition->repeatable
+            ) {
+                $uniqueDirectiveMap[$definition->name->value] = true;
             }
-
-            $uniqueDirectiveMap[$definition->name->value] = $definition->repeatable;
         }
 
         return [
@@ -66,21 +66,18 @@ class UniqueDirectivesPerLocation extends ValidationRule
 
                 $knownDirectives = [];
 
-                /** @var DirectiveNode $directive */
                 foreach ($node->directives as $directive) {
                     $directiveName = $directive->name->value;
 
-                    if (! isset($uniqueDirectiveMap[$directiveName])) {
-                        continue;
-                    }
-
-                    if (isset($knownDirectives[$directiveName])) {
-                        $context->reportError(new Error(
-                            static::duplicateDirectiveMessage($directiveName),
-                            [$knownDirectives[$directiveName], $directive]
-                        ));
-                    } else {
-                        $knownDirectives[$directiveName] = $directive;
+                    if (isset($uniqueDirectiveMap[$directiveName])) {
+                        if (isset($knownDirectives[$directiveName])) {
+                            $context->reportError(new Error(
+                                static::duplicateDirectiveMessage($directiveName),
+                                [$knownDirectives[$directiveName], $directive]
+                            ));
+                        } else {
+                            $knownDirectives[$directiveName] = $directive;
+                        }
                     }
                 }
             },

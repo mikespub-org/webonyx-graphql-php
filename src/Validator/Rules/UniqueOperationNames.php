@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Validator\Rules;
 
@@ -14,7 +12,7 @@ use GraphQL\Validator\ValidationContext;
 
 class UniqueOperationNames extends ValidationRule
 {
-    /** @var NameNode[] */
+    /** @var array<string, NameNode> */
     protected array $knownOperationNames;
 
     public function getVisitor(ValidationContext $context): array

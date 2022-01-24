@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Utils;
 
@@ -704,11 +702,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('Query' !== $type['name']) {
-                continue;
+            if ('Query' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         self::assertArrayHasKey('kind', $queryTypeIntrospection);
@@ -726,11 +722,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('Query' !== $type['name']) {
-                continue;
+            if ('Query' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         self::assertArrayHasKey('kind', $queryTypeIntrospection);
@@ -748,11 +742,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('Query' !== $type['name']) {
-                continue;
+            if ('Query' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         self::assertArrayHasKey('name', $queryTypeIntrospection);
@@ -773,11 +765,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('Query' !== $type['name']) {
-                continue;
+            if ('Query' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         self::assertArrayHasKey('interfaces', $queryTypeIntrospection);
@@ -799,11 +789,9 @@ SDL;
         $introspection = Introspection::fromSchema($dummySchema);
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('SomeInterface' !== $type['name']) {
-                continue;
+            if ('SomeInterface' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         self::assertArrayHasKey('interfaces', $queryTypeIntrospection);
@@ -825,11 +813,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('Query' !== $type['name']) {
-                continue;
+            if ('Query' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         self::assertArrayHasKey('fields', $queryTypeIntrospection);
@@ -850,11 +836,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('Query' !== $type['name']) {
-                continue;
+            if ('Query' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         $firstField = &$queryTypeIntrospection['fields'][0];
@@ -876,11 +860,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('Query' !== $type['name']) {
-                continue;
+            if ('Query' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         $firstArgType = &$queryTypeIntrospection['fields'][0]['args'][0]['type'];
@@ -902,11 +884,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $queryTypeIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('Query' !== $type['name']) {
-                continue;
+            if ('Query' === $type['name']) {
+                $queryTypeIntrospection = &$type;
             }
-
-            $queryTypeIntrospection = &$type;
         }
 
         $firstFieldType = &$queryTypeIntrospection['fields'][0]['type'];
@@ -928,11 +908,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $someUnionIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('SomeUnion' !== $type['name']) {
-                continue;
+            if ('SomeUnion' === $type['name']) {
+                $someUnionIntrospection = &$type;
             }
-
-            $someUnionIntrospection = &$type;
         }
 
         self::assertArrayHasKey('possibleTypes', $someUnionIntrospection);
@@ -953,11 +931,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $someEnumIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('SomeEnum' !== $type['name']) {
-                continue;
+            if ('SomeEnum' === $type['name']) {
+                $someEnumIntrospection = &$type;
             }
-
-            $someEnumIntrospection = &$type;
         }
 
         self::assertArrayHasKey('enumValues', $someEnumIntrospection);
@@ -978,11 +954,9 @@ SDL;
         $introspection = Introspection::fromSchema(self::dummySchema());
         $someInputObjectIntrospection = null;
         foreach ($introspection['__schema']['types'] as &$type) {
-            if ('SomeInputObject' !== $type['name']) {
-                continue;
+            if ('SomeInputObject' === $type['name']) {
+                $someInputObjectIntrospection = &$type;
             }
-
-            $someInputObjectIntrospection = &$type;
         }
 
         self::assertArrayHasKey('inputFields', $someInputObjectIntrospection);

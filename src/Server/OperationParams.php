@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Server;
 
@@ -111,11 +109,9 @@ class OperationParams
         ];
 
         foreach ($params as &$value) {
-            if ('' !== $value) {
-                continue;
+            if ('' === $value) {
+                $value = null;
             }
-
-            $value = null;
         }
 
         $instance->query = $params['query'];

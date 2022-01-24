@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Language\AST;
 
@@ -8,6 +6,5 @@ class FloatValueNode extends Node implements ValueNode
 {
     public string $kind = NodeKind::FLOAT;
 
-    /** @var string */
-    public $value;
+    public string $value;
 }

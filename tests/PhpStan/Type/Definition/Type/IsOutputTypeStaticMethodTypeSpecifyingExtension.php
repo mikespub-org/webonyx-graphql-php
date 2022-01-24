@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\PhpStan\Type\Definition\Type;
 
@@ -39,6 +37,6 @@ final class IsOutputTypeStaticMethodTypeSpecifyingExtension implements StaticMet
 
     public function specifyTypes(MethodReflection $staticMethodReflection, StaticCall $node, Scope $scope, TypeSpecifierContext $context): SpecifiedTypes
     {
-        return $this->typeSpecifier->create($node->args[0]->value, new ObjectType(OutputType::class), $context);
+        return $this->typeSpecifier->create($node->getArgs()[0]->value, new ObjectType(OutputType::class), $context);
     }
 }

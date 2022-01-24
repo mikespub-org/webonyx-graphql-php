@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type\Definition;
 
@@ -16,8 +14,6 @@ export type InputType =
       | InputObjectType
       | ListOfType<InputType>,
     >;
- *
- * @phpstan-type InputTypeAlias ScalarType|EnumType|InputObjectType|ListOfType<Type&InputType>|NonNull
  */
 interface InputType
 {

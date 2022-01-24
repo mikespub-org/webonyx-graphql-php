@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Type;
 
@@ -15,8 +13,8 @@ use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Introspection;
 use GraphQL\Type\Schema;
 use GraphQL\Validator\Rules\ProvidedRequiredArguments;
-use function json_encode;
 use PHPUnit\Framework\TestCase;
+use function Safe\json_encode;
 use function sprintf;
 
 class IntrospectionTest extends TestCase
@@ -1000,8 +998,7 @@ class IntrospectionTest extends TestCase
         ];
 
         $result = GraphQL::executeQuery($schema, $request)->toArray();
-        $result = $result['data']['__type'];
-        self::assertEquals($expectedFragment, $result);
+        self::assertEquals($expectedFragment, $result['data']['__type'] ?? null);
     }
 
     /**

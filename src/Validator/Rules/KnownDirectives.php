@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Validator\Rules;
 
@@ -77,16 +75,14 @@ class KnownDirectives extends ValidationRule
         $astDefinition = $context->getDocument()->definitions;
 
         foreach ($astDefinition as $def) {
-            if (! ($def instanceof DirectiveDefinitionNode)) {
-                continue;
-            }
+            if ($def instanceof DirectiveDefinitionNode) {
+                $locationNames = [];
+                foreach ($def->locations as $location) {
+                    $locationNames[] = $location->value;
+                }
 
-            $locationNames = [];
-            foreach ($def->locations as $location) {
-                $locationNames[] = $location->value;
+                $locationsMap[$def->name->value] = $locationNames;
             }
-
-            $locationsMap[$def->name->value] = $locationNames;
         }
 
         return [

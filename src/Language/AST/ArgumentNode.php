@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Language\AST;
 
@@ -11,9 +9,8 @@ class ArgumentNode extends Node
 {
     public string $kind = NodeKind::ARGUMENT;
 
-    /** @var ArgumentNodeValue */
-    public $value;
+    /** @phpstan-var ArgumentNodeValue */
+    public ValueNode $value;
 
-    /** @var NameNode */
-    public $name;
+    public NameNode $name;
 }

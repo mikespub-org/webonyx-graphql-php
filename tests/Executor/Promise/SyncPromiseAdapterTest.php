@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Executor\Promise;
 
@@ -50,7 +48,6 @@ class SyncPromiseAdapterTest extends TestCase
 
         $this->expectException(InvariantViolation::class);
         $this->expectExceptionMessage('Expected instance of GraphQL\Deferred, got (empty string)');
-        // @phpstan-ignore-next-line purposefully wrong
         $this->promises->convertThenable('');
     }
 
@@ -216,8 +213,15 @@ class SyncPromiseAdapterTest extends TestCase
         // Having single promise queue means that we won't stop in wait
         // until all pending promises are resolved
         self::assertEquals(2, $result);
-        self::assertEquals(SyncPromise::FULFILLED, $p3->adoptedPromise->state);
-        self::assertEquals(SyncPromise::FULFILLED, $all->adoptedPromise->state);
+
+        $p3AdoptedPromise = $p3->adoptedPromise;
+        self::assertInstanceOf(SyncPromise::class, $p3AdoptedPromise);
+        self::assertEquals(SyncPromise::FULFILLED, $p3AdoptedPromise->state);
+
+        $allAdoptedPromise = $all->adoptedPromise;
+        self::assertInstanceOf(SyncPromise::class, $allAdoptedPromise);
+        self::assertEquals(SyncPromise::FULFILLED, $allAdoptedPromise->state);
+
         self::assertEquals([1, 2, 3, 4], $called);
 
         $expectedResult = [0, 1, 2, 3, 4];

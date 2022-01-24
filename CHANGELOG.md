@@ -17,7 +17,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Use native PHP types for properties of `Type` and its subclasses
 - Throw `SerializationError` over client safe `Error` when failing to serialize leaf types
 - Move debug entries in errors under `extensions` key
-- Use native PHP types for `Schema` and `SchemaConfig`
+- Use native PHP types wherever possible
 - Always throw `RequestError` with useful message when clients provide an invalid JSON body
 - Move class `BlockString` from namespace `GraphQL\Utils` to `GraphQL\Language`
 - Return string-keyed arrays from `GraphQL::getStandardDirectives()`, `GraphQL::getStandardTypes()` and `GraphQL::getStandardValidationRules()`
@@ -32,6 +32,11 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Always convert recursively when calling `Node::toArray()`
 - Make `Directive::$config['args']` use the same definition style as `FieldDefinition::$config['args']`
 - Rename `FieldArgument` to `Argument`
+- Make errors when parsing scalar literals more precise
+- Change expected `QueryPlan` options from `['group-implementor-fields']` to `['groupImplementorFields' => true]` in `ResolveInfo::lookAhead()`
+- Always convert promises through `PromiseAdapter::convertThenable()` before calling `->then()` on them
+- Use `JSON_THROW_ON_ERROR` in `json_encode()`
+- Validate some internal invariants through `assert()`
 
 ### Added
 
@@ -59,7 +64,6 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Allow directives on variable definitions
 - Handle `null` parent of list in `ValuesOfCorrectType::getVisitor`
 - Allow sending both `query` and `queryId`, ignore `queryId` in that case
-- Fix `extend()` to preserve `repeatable` (#931)
 - Preserve extended methods from class-based types in `SchemaExtender::extend()`
 - Fix printing of empty types (#940)
 - Clone `NodeList` in `Node::cloneDeep()`
@@ -84,6 +88,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove deprecated public property access to `FieldDefinition::$type`
 - Remove alias `GraphQL\Validator\Rules\AbstractQuerySecurity`, use `GraphQL\Validator\Rules\QuerySecurityRule`
 - Remove alias `GraphQL\Validator\Rules\AbstractValidationRule`, use `GraphQL\Validator\Rules\ValidationRule`
+- Remove alias `GraphQL\Utils\FindBreakingChanges`, use `GraphQL\Utils\BreakingChangesFinder`
 - Remove `OperationParams` method `getOriginalInput()` in favor of public property `$originalInput`
 - Remove `OperationParams` method `isReadOnly()` in favor of public property `$readOnly`
 - Remove `Utils::withErrorHandling()`
@@ -97,6 +102,19 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove `ListOfType::$ofType`, `ListOfType::getOfType()` and `NonNull::getOfType()`
 - Remove option `commentDescriptions` from `BuildSchema::buildAST()`, `BuildSchema::build()` and `Printer::doPrint()`
 - Remove parameter `$options` from `ASTDefinitionBuilder`
+- Remove `FieldDefinition::create()` in favor of `new FieldDefinition()`
+
+## 14.11.5
+
+### Fixed
+
+- Fix `extend()` to preserve `repeatable` (#931)
+
+## 14.11.4
+
+### Fixed
+
+- Fix repeatable directive validation for AST
 
 ## 14.11.3
 

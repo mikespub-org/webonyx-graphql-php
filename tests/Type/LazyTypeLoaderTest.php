@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Type;
 
@@ -19,7 +17,7 @@ final class LazyTypeLoaderTest extends TypeLoaderTest
     /** @var callable(): InterfaceType */
     private $node;
 
-    /** @var callable(): ObjectType */
+    /** @var callable(): InterfaceType */
     private $content;
 
     /** @var callable(): ObjectType */

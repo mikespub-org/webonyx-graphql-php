@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Tests\Executor;
 
@@ -60,8 +58,8 @@ class ListsTest extends TestCase
     }
 
     /**
-     * @param Type                 &OutputType $testType
-     * @param mixed                $testData
+     * @param Type&OutputType $testType
+     * @param mixed $testData
      * @param array<string, mixed> $expected
      */
     private function check(Type $testType, $testData, array $expected, int $debug = DebugFlag::NONE): void

@@ -1,17 +1,15 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Examples\Blog\Type;
 
 use Exception;
-use function get_class;
 use GraphQL\Examples\Blog\Data\Image;
 use GraphQL\Examples\Blog\Data\Story;
 use GraphQL\Examples\Blog\Data\User;
 use GraphQL\Examples\Blog\Types;
 use GraphQL\Type\Definition\InterfaceType;
-use GraphQL\Type\Definition\Type;
+use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Utils\Utils;
 
 class NodeType extends InterfaceType
 {
@@ -26,7 +24,12 @@ class NodeType extends InterfaceType
         ]);
     }
 
-    public function resolveNodeType(object $object): Type
+    /**
+     * @param mixed $object
+     *
+     * @return callable(): ObjectType
+     */
+    public function resolveNodeType($object)
     {
         if ($object instanceof User) {
             return Types::user();
@@ -40,6 +43,6 @@ class NodeType extends InterfaceType
             return Types::story();
         }
 
-        throw new Exception('Unknown type: ' . get_class($object));
+        throw new Exception('Unknown type: ' . Utils::printSafe($object));
     }
 }

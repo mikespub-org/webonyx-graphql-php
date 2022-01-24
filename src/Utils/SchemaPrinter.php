@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Utils;
 
@@ -205,7 +203,7 @@ class SchemaPrinter
 
     /**
      * @param array<string, bool>                                                          $options
-     * @param Type|Directive|EnumValueDefinition|Argument|FieldDefinition|InputObjectField $def
+     * @param (Type&NamedType)|Directive|EnumValueDefinition|Argument|FieldDefinition|InputObjectField $def
      */
     protected static function printDescription(array $options, $def, string $indentation = '', bool $firstInBlock = true): string
     {
@@ -252,12 +250,18 @@ class SchemaPrinter
         if (
             Utils::every(
                 $args,
-                static function ($arg): bool {
-                    return 0 === strlen($arg->description ?? '');
-                }
+                static fn (Argument $arg): bool => 0 === strlen($arg->description ?? '')
             )
         ) {
-            return '(' . implode(', ', array_map('static::printInputValue', $args)) . ')';
+            return '('
+                . implode(
+                    ', ',
+                    array_map(
+                        [static::class, 'printInputValue'],
+                        $args
+                    )
+                )
+                . ')';
         }
 
         return sprintf(

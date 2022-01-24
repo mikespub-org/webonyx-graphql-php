@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Utils;
 
@@ -36,8 +34,10 @@ use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\IDType;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\InputType;
+use GraphQL\Type\Definition\LeafType;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
+use GraphQL\Type\Definition\NullableType;
 use GraphQL\Type\Definition\ScalarType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
@@ -49,7 +49,6 @@ use function is_object;
 use function is_string;
 use function property_exists;
 use Throwable;
-use Traversable;
 
 /**
  * Various utilities dealing with AST.
@@ -148,16 +147,17 @@ class AST
      * | Mixed         | Enum Value           |
      * | null          | NullValue            |
      *
-     * @param Type|mixed|null                                     $value
-     * @param ScalarType|EnumType|InputObjectType|ListOfType<Type &InputType>|NonNull $type
+     * @param mixed $value
+     * @param InputType&Type $type
      *
-     * @return ObjectValueNode|ListValueNode|BooleanValueNode|IntValueNode|FloatValueNode|EnumValueNode|StringValueNode|NullValueNode|null
+     * @return (ValueNode&Node)|null
      *
      * @api
      */
-    public static function astFromValue($value, InputType $type)
+    public static function astFromValue($value, InputType $type): ?ValueNode
     {
         if ($type instanceof NonNull) {
+            // @phpstan-ignore-next-line wrapped type must also be input type
             $astValue = self::astFromValue($value, $type->getWrappedType());
             if ($astValue instanceof NullValueNode) {
                 return null;
@@ -170,19 +170,19 @@ class AST
             return new NullValueNode([]);
         }
 
-        // Convert PHP array to GraphQL list. If the GraphQLType is a list, but
+        // Convert PHP iterables to GraphQL list. If the GraphQLType is a list, but
         // the value is not an array, convert the value using the list's item type.
         if ($type instanceof ListOfType) {
             $itemType = $type->getWrappedType();
-            if (is_array($value) || ($value instanceof Traversable)) {
+            assert($itemType instanceof InputType, 'proven by schema validation');
+
+            if (is_iterable($value)) {
                 $valuesNodes = [];
                 foreach ($value as $item) {
                     $itemNode = self::astFromValue($item, $itemType);
-                    if (null === $itemNode) {
-                        continue;
+                    if (null !== $itemNode) {
+                        $valuesNodes[] = $itemNode;
                     }
-
-                    $valuesNodes[] = $itemNode;
                 }
 
                 return new ListValueNode(['values' => new NodeList($valuesNodes)]);
@@ -239,6 +239,8 @@ class AST
 
             return new ObjectValueNode(['fields' => new NodeList($fieldNodes)]);
         }
+
+        assert($type instanceof LeafType, 'other options were exhausted');
 
         // Since value is an internally represented value, it must be serialized
         // to an externally represented value before converting into an AST.
@@ -301,8 +303,8 @@ class AST
      * | Enum Value           | Mixed         |
      * | Null Value           | null          |
      *
-     * @param VariableNode|NullValueNode|IntValueNode|FloatValueNode|StringValueNode|BooleanValueNode|EnumValueNode|ListValueNode|ObjectValueNode|null $valueNode
-     * @param array<string, mixed>|null                                                                                                                $variables
+     * @param (ValueNode&Node)|null $valueNode
+     * @param array<string, mixed>|null $variables
      *
      * @throws Exception
      *
@@ -441,26 +443,24 @@ class AST
             }
         }
 
-        if ($type instanceof ScalarType) {
-            // Scalars fulfill parsing a literal value via parseLiteral().
-            // Invalid values represent a failure to parse correctly, in which case
-            // no value is returned.
-            try {
-                return $type->parseLiteral($valueNode, $variables);
-            } catch (Throwable $error) {
-                return $undefined;
-            }
-        }
+        assert($type instanceof ScalarType, 'only remaining option');
 
-        throw new Error('Unknown type: ' . Utils::printSafe($type) . '.');
+        // Scalars fulfill parsing a literal value via parseLiteral().
+        // Invalid values represent a failure to parse correctly, in which case
+        // no value is returned.
+        try {
+            return $type->parseLiteral($valueNode, $variables);
+        } catch (Throwable $error) {
+            return $undefined;
+        }
     }
 
     /**
      * Returns true if the provided valueNode is a variable which is not defined
      * in the set of variables.
      *
-     * @param VariableNode|NullValueNode|IntValueNode|FloatValueNode|StringValueNode|BooleanValueNode|EnumValueNode|ListValueNode|ObjectValueNode $valueNode
-     * @param array<string, mixed>|null                                                                                                           $variables
+     * @param ValueNode&Node $valueNode
+     * @param array<string, mixed>|null $variables
      */
     private static function isMissingVariable(ValueNode $valueNode, ?array $variables): bool
     {
@@ -557,10 +557,13 @@ class AST
 
         if ($inputTypeNode instanceof NonNullTypeNode) {
             $innerType = self::typeFromAST($schema, $inputTypeNode->type);
+            if (null === $innerType) {
+                return null;
+            }
 
-            return null === $innerType
-                ? null
-                : new NonNull($innerType);
+            assert($innerType instanceof NullableType, 'proven by schema validation');
+
+            return new NonNull($innerType);
         }
 
         return $schema->getType($inputTypeNode->name->value);

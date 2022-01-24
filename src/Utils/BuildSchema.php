@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Utils;
 
@@ -132,8 +130,10 @@ class BuildSchema
 
         $schemaDef = null;
         $this->nodeMap = [];
+
         /** @var array<int, DirectiveDefinitionNode> $directiveDefs */
         $directiveDefs = [];
+
         foreach ($this->ast->definitions as $definition) {
             switch (true) {
                 case $definition instanceof SchemaDefinitionNode:

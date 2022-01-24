@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Language\AST;
 
@@ -9,12 +7,9 @@ class OperationTypeDefinitionNode extends Node
     public string $kind = NodeKind::OPERATION_TYPE_DEFINITION;
 
     /**
-     * One of 'query' | 'mutation' | 'subscription'.
-     *
-     * @var string
+     * @var 'query'|'mutation'|'subscription'
      */
-    public $operation;
+    public string $operation;
 
-    /** @var NamedTypeNode */
-    public $type;
+    public NamedTypeNode $type;
 }

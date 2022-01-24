@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Validator\Rules;
 
@@ -25,16 +23,15 @@ class ExecutableDefinitions extends ValidationRule
     {
         return [
             NodeKind::DOCUMENT => static function (DocumentNode $node) use ($context): VisitorOperation {
-                /** @var ExecutableDefinitionNode|TypeSystemDefinitionNode $definition */
                 foreach ($node->definitions as $definition) {
-                    if ($definition instanceof ExecutableDefinitionNode) {
-                        continue;
-                    }
+                    if (! $definition instanceof ExecutableDefinitionNode) {
+                        assert($definition instanceof TypeSystemDefinitionNode, 'only other option');
 
-                    $context->reportError(new Error(
-                        static::nonExecutableDefinitionMessage($definition->name->value),
-                        [$definition->name]
-                    ));
+                        $context->reportError(new Error(
+                            static::nonExecutableDefinitionMessage($definition->name->value),
+                            [$definition->name]
+                        ));
+                    }
                 }
 
                 return Visitor::skipNode();

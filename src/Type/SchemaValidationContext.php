@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Type;
 
@@ -92,7 +90,7 @@ class SchemaValidationContext
     }
 
     /**
-     * @param array<Node>|Node|null $nodes
+     * @param array<Node|null>|Node|null $nodes
      */
     public function reportError(string $message, $nodes = null): void
     {
@@ -127,13 +125,13 @@ class SchemaValidationContext
             if (! $directive instanceof Directive) {
                 $notDirective = Utils::printSafe($directive);
                 // @phpstan-ignore-next-line The generic type says this should not happen, but a user may use it wrong nonetheless
-                $node = is_object($directive) && property_exists($directive, 'astNode')
+                $nodes = is_object($directive) && property_exists($directive, 'astNode')
                     ? $directive->astNode
                     : null;
 
                 $this->reportError(
                     "Expected directive but got: {$notDirective}.",
-                    $node
+                    $nodes
                 );
                 continue;
             }
@@ -165,42 +163,36 @@ class SchemaValidationContext
                 $argNames[$argName] = true;
 
                 // Ensure the type is an input type.
-                // @phpstan-ignore-next-line the type of $arg->getType() says it is an input type, but it might not always be true
-                if (Type::isInputType($arg->getType())) {
-                    continue;
+                // @phpstan-ignore-next-line necessary until PHP supports union types
+                if (! Type::isInputType($arg->getType())) {
+                    $type = Utils::printSafe($arg->getType());
+                    $this->reportError(
+                        "The type of @{$directive->name}({$argName}:) must be Input Type but got: {$type}.",
+                        $this->getDirectiveArgTypeNode($directive, $argName)
+                    );
                 }
-
-                $type = Utils::printSafe($arg->getType());
-                $this->reportError(
-                    "The type of @{$directive->name}({$argName}:) must be Input Type but got: {$type}.",
-                    $this->getDirectiveArgTypeNode($directive, $argName)
-                );
             }
         }
 
         foreach ($directiveDefinitions as $directiveName => $directiveList) {
-            if (count($directiveList) <= 1) {
-                continue;
-            }
-
-            $node = [];
-            foreach ($directiveList as $dir) {
-                if (null === $dir->astNode) {
-                    continue;
+            if (count($directiveList) > 1) {
+                $nodes = [];
+                foreach ($directiveList as $dir) {
+                    if (isset($dir->astNode)) {
+                        $nodes[] = $dir->astNode;
+                    }
                 }
 
-                $node[] = $dir->astNode;
+                $this->reportError(
+                    "Directive @{$directiveName} defined multiple times.",
+                    $nodes
+                );
             }
-
-            $this->reportError(
-                "Directive @{$directiveName} defined multiple times.",
-                $node
-            );
         }
     }
 
     /**
-     * @param Type|Directive|FieldDefinition|EnumValueDefinition|InputObjectField|Argument $object
+     * @param (Type&NamedType)|Directive|FieldDefinition|EnumValueDefinition|InputObjectField|Argument $object
      */
     private function validateName(object $object): void
     {
@@ -208,7 +200,7 @@ class SchemaValidationContext
         $error = Utils::isValidNameError($object->name, $object->astNode);
         if (
             null === $error
-            || ($object instanceof Type && $object instanceof NamedType && Introspection::isIntrospectionType($object))
+            || ($object instanceof Type && Introspection::isIntrospectionType($object))
         ) {
             return;
         }
@@ -228,11 +220,9 @@ class SchemaValidationContext
 
         $matchingSubnodes = [];
         foreach ($astNode->arguments as $subNode) {
-            if ($subNode->name->value !== $argName) {
-                continue;
+            if ($subNode->name->value === $argName) {
+                $matchingSubnodes[] = $subNode;
             }
-
-            $matchingSubnodes[] = $subNode;
         }
 
         return $matchingSubnodes;
@@ -373,24 +363,20 @@ class SchemaValidationContext
                 );
             }
 
-            if ($schemaDirective->isRepeatable) {
-                continue;
+            if (! $schemaDirective->isRepeatable) {
+                $existingNodes = $potentiallyDuplicateDirectives[$directiveName] ?? [];
+                $existingNodes[] = $directive;
+                $potentiallyDuplicateDirectives[$directiveName] = $existingNodes;
             }
-
-            $existingNodes = $potentiallyDuplicateDirectives[$directiveName] ?? [];
-            $existingNodes[] = $directive;
-            $potentiallyDuplicateDirectives[$directiveName] = $existingNodes;
         }
 
         foreach ($potentiallyDuplicateDirectives as $directiveName => $directiveList) {
-            if (count($directiveList) <= 1) {
-                continue;
+            if (count($directiveList) > 1) {
+                $this->reportError(
+                    "Non-repeatable directive @{$directiveName} used more than once at the same location.",
+                    $directiveList
+                );
             }
-
-            $this->reportError(
-                "Non-repeatable directive @{$directiveName} used more than once at the same location.",
-                $directiveList
-            );
         }
     }
 
@@ -461,25 +447,21 @@ class SchemaValidationContext
                 }
 
                 // Ensure argument definition directives are valid
-                if (! isset($arg->astNode, $arg->astNode->directives)) {
-                    continue;
+                if (isset($arg->astNode, $arg->astNode->directives)) {
+                    $this->validateDirectivesAtLocation(
+                        $arg->astNode->directives,
+                        DirectiveLocation::ARGUMENT_DEFINITION
+                    );
                 }
-
-                $this->validateDirectivesAtLocation(
-                    $arg->astNode->directives,
-                    DirectiveLocation::ARGUMENT_DEFINITION
-                );
             }
 
             // Ensure any directives are valid
-            if (! isset($field->astNode, $field->astNode->directives)) {
-                continue;
+            if (isset($field->astNode, $field->astNode->directives)) {
+                $this->validateDirectivesAtLocation(
+                    $field->astNode->directives,
+                    DirectiveLocation::FIELD_DEFINITION
+                );
             }
-
-            $this->validateDirectivesAtLocation(
-                $field->astNode->directives,
-                DirectiveLocation::FIELD_DEFINITION
-            );
         }
     }
 
@@ -521,11 +503,9 @@ class SchemaValidationContext
 
         foreach ($allNodes as $node) {
             foreach ($node->fields as $field) {
-                if ($field->name->value !== $fieldName) {
-                    continue;
+                if ($field->name->value === $fieldName) {
+                    $matchingFieldNodes[] = $field;
                 }
-
-                $matchingFieldNodes[] = $field;
             }
         }
 
@@ -565,13 +545,11 @@ class SchemaValidationContext
     {
         $argNodes = [];
         $fieldNode = $this->getFieldNode($type, $fieldName);
-        if (null !== $fieldNode && null !== $fieldNode->arguments) {
+        if (null !== $fieldNode) {
             foreach ($fieldNode->arguments as $node) {
-                if ($node->name->value !== $argName) {
-                    continue;
+                if ($node->name->value === $argName) {
+                    $argNodes[] = $node;
                 }
-
-                $argNodes[] = $node;
             }
         }
 
@@ -643,13 +621,19 @@ class SchemaValidationContext
     }
 
     /**
-     * @param Schema|Type $object
+     * @param Schema|(Type&NamedType) $object
      *
      * @return NodeList<DirectiveNode>
      */
     private function getDirectives(object $object): NodeList
     {
         $directives = [];
+        /**
+         * Excluding directiveNode, since $object is not Directive.
+         *
+         * @var SchemaDefinitionNode|SchemaTypeExtensionNode|ObjectTypeDefinitionNode|ObjectTypeExtensionNode|InterfaceTypeDefinitionNode|InterfaceTypeExtensionNode|UnionTypeDefinitionNode|UnionTypeExtensionNode|EnumTypeDefinitionNode|EnumTypeExtensionNode|InputObjectTypeDefinitionNode|InputObjectTypeExtensionNode $node
+         */
+        // @phpstan-ignore-next-line union types are not pervasive
         foreach ($this->getAllNodes($object) as $node) {
             foreach ($node->directives as $directive) {
                 $directives[] = $directive;
@@ -687,11 +671,9 @@ class SchemaValidationContext
 
         foreach ($allNodes as $node) {
             foreach ($node->interfaces as $interface) {
-                if ($interface->name->value !== $shouldBeInterfaceName) {
-                    continue;
+                if ($interface->name->value === $shouldBeInterfaceName) {
+                    $matchingInterfaceNodes[] = $interface;
                 }
-
-                $matchingInterfaceNodes[] = $interface;
             }
         }
 
@@ -798,17 +780,15 @@ class SchemaValidationContext
                     }
                 }
 
-                if (null !== $ifaceArg || ! $typeArg->isRequired()) {
-                    continue;
+                if (null === $ifaceArg && $typeArg->isRequired()) {
+                    $this->reportError(
+                        "Object field {$type->name}.{$fieldName} includes required argument {$argName} that is missing from the Interface field {$iface->name}.{$fieldName}.",
+                        [
+                            $this->getFieldArgNode($type, $fieldName, $argName),
+                            $this->getFieldNode($iface, $fieldName),
+                        ]
+                    );
                 }
-
-                $this->reportError(
-                    "Object field {$type->name}.{$fieldName} includes required argument {$argName} that is missing from the Interface field {$iface->name}.{$fieldName}.",
-                    [
-                        $this->getFieldArgNode($type, $fieldName, $argName),
-                        $this->getFieldNode($iface, $fieldName),
-                    ]
-                );
             }
         }
     }
@@ -820,20 +800,18 @@ class SchemaValidationContext
     {
         $typeInterfaces = $type->getInterfaces();
         foreach ($iface->getInterfaces() as $transitive) {
-            if (in_array($transitive, $typeInterfaces, true)) {
-                continue;
+            if (! in_array($transitive, $typeInterfaces, true)) {
+                $error = $transitive === $type
+                    ? "Type {$type->name} cannot implement {$iface->name} because it would create a circular reference."
+                    : "Type {$type->name} must implement {$transitive->name} because it is implemented by {$iface->name}.";
+                $this->reportError(
+                    $error,
+                    array_merge(
+                        $this->getAllImplementsInterfaceNodes($iface, $transitive),
+                        $this->getAllImplementsInterfaceNodes($type, $iface)
+                    )
+                );
             }
-
-            $error = $transitive === $type
-                ? "Type {$type->name} cannot implement {$iface->name} because it would create a circular reference."
-                : "Type {$type->name} must implement {$transitive->name} because it is implemented by {$iface->name}.";
-            $this->reportError(
-                $error,
-                array_merge(
-                    $this->getAllImplementsInterfaceNodes($iface, $transitive),
-                    $this->getAllImplementsInterfaceNodes($type, $iface)
-                )
-            );
         }
     }
 
@@ -885,11 +863,9 @@ class SchemaValidationContext
         $types = [];
         foreach ($allNodes as $node) {
             foreach ($node->types as $type) {
-                if ($type->name->value !== $typeName) {
-                    continue;
+                if ($type->name->value === $typeName) {
+                    $types[] = $type;
                 }
-
-                $types[] = $type;
             }
         }
 
@@ -920,14 +896,12 @@ class SchemaValidationContext
             }
 
             // Ensure valid directives
-            if (! isset($enumValue->astNode, $enumValue->astNode->directives)) {
-                continue;
+            if (isset($enumValue->astNode, $enumValue->astNode->directives)) {
+                $this->validateDirectivesAtLocation(
+                    $enumValue->astNode->directives,
+                    DirectiveLocation::ENUM_VALUE
+                );
             }
-
-            $this->validateDirectivesAtLocation(
-                $enumValue->astNode->directives,
-                DirectiveLocation::ENUM_VALUE
-            );
         }
     }
 
@@ -961,14 +935,12 @@ class SchemaValidationContext
             }
 
             // Ensure valid directives
-            if (! isset($field->astNode, $field->astNode->directives)) {
-                continue;
+            if (isset($field->astNode, $field->astNode->directives)) {
+                $this->validateDirectivesAtLocation(
+                    $field->astNode->directives,
+                    DirectiveLocation::INPUT_FIELD_DEFINITION
+                );
             }
-
-            $this->validateDirectivesAtLocation(
-                $field->astNode->directives,
-                DirectiveLocation::INPUT_FIELD_DEFINITION
-            );
         }
     }
 }

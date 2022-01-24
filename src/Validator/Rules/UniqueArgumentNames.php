@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace GraphQL\Validator\Rules;
 
@@ -48,7 +46,7 @@ class UniqueArgumentNames extends ValidationRule
             },
             NodeKind::ARGUMENT => function (ArgumentNode $node) use ($context): VisitorOperation {
                 $argName = $node->name->value;
-                if ($this->knownArgNames[$argName] ?? false) {
+                if (isset($this->knownArgNames[$argName])) {
                     $context->reportError(new Error(
                         static::duplicateArgMessage($argName),
                         [$this->knownArgNames[$argName], $node->name]
