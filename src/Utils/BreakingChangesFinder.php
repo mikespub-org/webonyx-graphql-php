@@ -29,7 +29,7 @@ use TypeError;
  * @phpstan-type Change array{type: string, description: string}
  * @phpstan-type Changes array{
  *     breakingChanges: array<int, Change>,
- *     dangerousChanges: array<int, Change>,
+ *     dangerousChanges: array<int, Change>
  * }
  */
 class BreakingChangesFinder
@@ -497,7 +497,7 @@ class BreakingChangesFinder
                             return $arg->name === $oldArgDef->name;
                         }
                     );
-                    if (null !== $newArgDef) {
+                    if ($newArgDef !== null) {
                         $isSafe = self::isChangeSafeForInputObjectFieldOrFieldArg(
                             $oldArgDef->getType(),
                             $newArgDef->getType()
@@ -538,7 +538,7 @@ class BreakingChangesFinder
                             }
                         );
 
-                        if (null !== $oldArgDef) {
+                        if ($oldArgDef !== null) {
                             continue;
                         }
 
@@ -592,7 +592,7 @@ class BreakingChangesFinder
                         return $interface->name === $oldInterface->name;
                     }
                 );
-                if (null === $interface) {
+                if ($interface === null) {
                     $breakingChanges[] = [
                         'type' => self::BREAKING_CHANGE_IMPLEMENTED_INTERFACE_REMOVED,
                         'description' => sprintf('%s no longer implements interface %s.', $typeName, $oldInterface->name),
@@ -872,7 +872,7 @@ class BreakingChangesFinder
                     }
                 );
 
-                if (null === $interface) {
+                if ($interface === null) {
                     $interfacesAddedToObjectTypes[] = [
                         'type' => self::DANGEROUS_CHANGE_IMPLEMENTED_INTERFACE_ADDED,
                         'description' => sprintf(

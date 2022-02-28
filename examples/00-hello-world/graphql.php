@@ -49,14 +49,14 @@ try {
     ]);
 
     // See docs on schema options:
-    // https://webonyx.github.io/graphql-php/type-system/schema/#configuration-options
+    // https://webonyx.github.io/graphql-php/schema-definition/#configuration-options
     $schema = new Schema([
         'query' => $queryType,
         'mutation' => $mutationType,
     ]);
 
     $rawInput = file_get_contents('php://input');
-    if (false === $rawInput) {
+    if ($rawInput === false) {
         throw new RuntimeException('Failed to get php://input');
     }
 
