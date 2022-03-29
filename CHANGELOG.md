@@ -41,6 +41,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Throw if `Introspection::fromSchema()` returns no data
 - Reorganize abstract class `ASTValidationContext` to interface `ValidationContext`
 - Reorganize AST interfaces related to schema and type extensions
+- Align `Utils::suggestionList()` with the reference implementation (#1075)
 
 ### Added
 
@@ -56,6 +57,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Allow lazy enum values
 - Make `Node` implement `JsonSerializable`
 - Add SDL validation rule `UniqueTypeNames` (#998)
+- Add support for SDL validation to `KnownTypeNames` rule (#999)
 
 ### Optimized
 
@@ -111,6 +113,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove parameter `$options` from `ASTDefinitionBuilder`
 - Remove `FieldDefinition::create()` in favor of `new FieldDefinition()`
 - Remove `GraphQL\Exception\InvalidArgument`
+- Remove `Utils::find()`, `Utils::every()` and `Utils::invariant()`
 
 ## 14.11.5
 
