@@ -34,10 +34,12 @@ use GraphQL\Validator\Rules\QueryDepth;
 use GraphQL\Validator\Rules\QuerySecurityRule;
 use GraphQL\Validator\Rules\ScalarLeafs;
 use GraphQL\Validator\Rules\SingleFieldSubscription;
+use GraphQL\Validator\Rules\UniqueArgumentDefinitionNames;
 use GraphQL\Validator\Rules\UniqueArgumentNames;
 use GraphQL\Validator\Rules\UniqueDirectiveNames;
 use GraphQL\Validator\Rules\UniqueDirectivesPerLocation;
 use GraphQL\Validator\Rules\UniqueEnumValueNames;
+use GraphQL\Validator\Rules\UniqueFieldDefinitionNames;
 use GraphQL\Validator\Rules\UniqueFragmentNames;
 use GraphQL\Validator\Rules\UniqueInputFieldNames;
 use GraphQL\Validator\Rules\UniqueOperationNames;
@@ -206,14 +208,16 @@ class DocumentValidator
             LoneSchemaDefinition::class => new LoneSchemaDefinition(),
             UniqueOperationTypes::class => new UniqueOperationTypes(),
             UniqueTypeNames::class => new UniqueTypeNames(),
+            UniqueEnumValueNames::class => new UniqueEnumValueNames(),
+            UniqueFieldDefinitionNames::class => new UniqueFieldDefinitionNames(),
+            UniqueArgumentDefinitionNames::class => new UniqueArgumentDefinitionNames(),
             UniqueDirectiveNames::class => new UniqueDirectiveNames(),
             KnownTypeNames::class => new KnownTypeNames(),
             KnownDirectives::class => new KnownDirectives(),
-            KnownArgumentNamesOnDirectives::class => new KnownArgumentNamesOnDirectives(),
             UniqueDirectivesPerLocation::class => new UniqueDirectivesPerLocation(),
             PossibleTypeExtensions::class => new PossibleTypeExtensions(),
+            KnownArgumentNamesOnDirectives::class => new KnownArgumentNamesOnDirectives(),
             UniqueArgumentNames::class => new UniqueArgumentNames(),
-            UniqueEnumValueNames::class => new UniqueEnumValueNames(),
             UniqueInputFieldNames::class => new UniqueInputFieldNames(),
             ProvidedRequiredArgumentsOnDirectives::class => new ProvidedRequiredArgumentsOnDirectives(),
         ];

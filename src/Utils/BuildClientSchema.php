@@ -88,9 +88,7 @@ class BuildClientSchema
      */
     public static function build(array $introspectionQuery, array $options = []): Schema
     {
-        $builder = new self($introspectionQuery, $options);
-
-        return $builder->buildSchema();
+        return (new self($introspectionQuery, $options))->buildSchema();
     }
 
     public function buildSchema(): Schema
@@ -189,7 +187,7 @@ class BuildClientSchema
     {
         if (! isset($this->typeMap[$typeName])) {
             throw new InvariantViolation(
-                "Invalid or incomplete schema, unknown type: ${typeName}. Ensure that a full introspection query is used in order to build a client schema."
+                "Invalid or incomplete schema, unknown type: {$typeName}. Ensure that a full introspection query is used in order to build a client schema."
             );
         }
 

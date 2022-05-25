@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 You can find and compare releases at the [GitHub release page](https://github.com/webonyx/graphql-php/releases).
@@ -42,6 +42,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Reorganize abstract class `ASTValidationContext` to interface `ValidationContext`
 - Reorganize AST interfaces related to schema and type extensions
 - Align `Utils::suggestionList()` with the reference implementation (#1075)
+- Order schema topologically and according to the user-defined order, affects introspection and printing
 
 ### Added
 
@@ -58,6 +59,9 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Make `Node` implement `JsonSerializable`
 - Add SDL validation rule `UniqueTypeNames` (#998)
 - Add support for SDL validation to `KnownTypeNames` rule (#999)
+- Add SDL validation rule `UniqueArgumentDefinitionNames` (#1136)
+- Add `parseValue` config option to InputObjectType to parse input value to custom value object
+- Add option `sortTypes` to have `SchemaPrinter` order types alphabetically
 
 ### Optimized
 
@@ -115,6 +119,8 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove `GraphQL\Exception\InvalidArgument`
 - Remove `Utils::find()`, `Utils::every()` and `Utils::invariant()`
 - Remove argument `bool $exitWhenDone` from `StandardServer::send500Error()` and `StandardServer::handleRequest()`
+- Remove `Schema::getAstNode()` in favor of `Schema::$astNode`
+- Remove ability to override standard types through `Schema` option `types`, use `Type::overrideStandardTypes()`
 
 ## 14.11.6
 
