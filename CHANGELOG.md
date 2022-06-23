@@ -43,6 +43,8 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Reorganize AST interfaces related to schema and type extensions
 - Align `Utils::suggestionList()` with the reference implementation (#1075)
 - Order schema topologically and according to the user-defined order, affects introspection and printing
+- `GraphQL\Utils\AST::typeFromAST()` now needs a type loader callable instead of the Schema
+- Do not change HTTP status code in `StandardServer`
 
 ### Added
 
@@ -62,6 +64,8 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Add SDL validation rule `UniqueArgumentDefinitionNames` (#1136)
 - Add `parseValue` config option to InputObjectType to parse input value to custom value object
 - Add option `sortTypes` to have `SchemaPrinter` order types alphabetically
+- Allow constructing `EnumType` from PHP enum
+- Add `TypeInfo::getParentTypeStack()`
 
 ### Optimized
 
@@ -80,6 +84,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Clone `NodeList` in `Node::cloneDeep()`
 - Calling `Schema::getType()` on a schema built from SDL returns `null` for unknown types (#1068)
 - Avoid crash on typeless inline fragment when using `QueryComplexity` rule
+- Avoid calling `FormattedError::addDebugEntries()` twice when using default error formatting
 
 ### Removed
 
@@ -121,6 +126,9 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove argument `bool $exitWhenDone` from `StandardServer::send500Error()` and `StandardServer::handleRequest()`
 - Remove `Schema::getAstNode()` in favor of `Schema::$astNode`
 - Remove ability to override standard types through `Schema` option `types`, use `Type::overrideStandardTypes()`
+- Remove `GraphQL\Utils\TypeInfo::typeFromAST()`, use `GraphQL\Utils\AST::typeFromAST()`
+- Remove `StandardServer::send500Error()`, handle non-GraphQL errors yourself
+- Remove `StandardServer::getHelper()`, use `new Helper`
 
 ## 14.11.6
 
