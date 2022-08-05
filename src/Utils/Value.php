@@ -6,6 +6,9 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function assert;
+
+use GraphQL\Error\CoercionError;
 use GraphQL\Error\Error;
 use GraphQL\Language\AST\VariableDefinitionNode;
 use GraphQL\Type\Definition\EnumType;
@@ -16,8 +19,10 @@ use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ScalarType;
 use GraphQL\Type\Definition\Type;
+
 use function is_array;
 use function is_string;
+
 use stdClass;
 use Throwable;
 use Traversable;
@@ -29,7 +34,7 @@ use Traversable;
  * encountered coercion errors.
  *
  * @phpstan-type CoercedValue array{errors: null, value: mixed}
- * @phpstan-type CoercedErrors array{errors: array<int, Error>, value: null}
+ * @phpstan-type CoercedErrors array{errors: array<int, CoercionError>, value: null}
  *
  * The key prev should actually also be typed as Path, but PHPStan does not support recursive types.
  * @phpstan-type Path array{prev: array<string, mixed>|null, key: string|int}
@@ -227,7 +232,7 @@ class Value
     }
 
     /**
-     * @param array<int, Error> $errors
+     * @param array<int, CoercionError> $errors
      *
      * @phpstan-return CoercedErrors
      */
@@ -245,7 +250,7 @@ class Value
         ?array $path = null,
         ?string $subMessage = null,
         ?Throwable $originalError = null
-    ): Error {
+    ): CoercionError {
         $pathStr = self::printPath($path);
 
         $fullMessage = $message
@@ -256,13 +261,21 @@ class Value
                 ? '.'
                 : '; ' . $subMessage);
 
-        return new Error(
+        $atPath = null;
+        if ($path !== null) {
+            $atPath = [];
+            do {
+                $key = $path['key'];
+                array_unshift($atPath, $key);
+                $path = $path['prev'];
+            } while ($path !== null);
+        }
+
+        return new CoercionError(
             $fullMessage,
             $blameNode,
-            null,
-            [],
-            null,
-            $originalError
+            $originalError,
+            $atPath
         );
     }
 
@@ -312,10 +325,10 @@ class Value
     }
 
     /**
-     * @param array<int, Error>       $errors
-     * @param Error|array<int, Error> $errorOrErrors
+     * @param array<int, CoercionError>       $errors
+     * @param CoercionError|array<int, CoercionError> $errorOrErrors
      *
-     * @return array<int, Error>
+     * @return array<int, CoercionError>
      */
     private static function add(array $errors, $errorOrErrors): array
     {
