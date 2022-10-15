@@ -48,6 +48,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Use `"` instead of `"""` for single line descriptions
 - Make `Helper::emitResponse()` private, use `Helper::sendResponse()`
 - Emit unescaped UTF-8 from `StandardServer`
+- Sync input value coercion with `graphql-js` reference implementation
 
 ### Added
 
@@ -135,6 +136,18 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove `GraphQL\Utils\TypeInfo::typeFromAST()`, use `GraphQL\Utils\AST::typeFromAST()`
 - Remove `StandardServer::send500Error()`, handle non-GraphQL errors yourself
 - Remove `StandardServer::getHelper()`, use `new Helper`
+
+## 14.11.8
+
+### Fixed
+
+- Correct the broken 14.11.7 release - see https://github.com/webonyx/graphql-php/issues/1221
+
+## 14.11.7
+
+### Fixed
+
+- Fix PHP 8.2 deprecation of "static" in callables
 
 ## 14.11.6
 
