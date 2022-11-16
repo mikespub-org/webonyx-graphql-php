@@ -33,7 +33,9 @@ class PossibleTypeExtensions extends ValidationRule
         $definedTypes = [];
         foreach ($context->getDocument()->definitions as $def) {
             if ($def instanceof TypeDefinitionNode) {
-                $definedTypes[$def->name->value] = $def;
+                /** @var string $name Necessary assertion for PHPStan + PHP 8.2 */
+                $name = $def->name->value;
+                $definedTypes[$name] = $def;
             }
         }
 
@@ -56,7 +58,7 @@ class PossibleTypeExtensions extends ValidationRule
                     $kindStr = self::extensionKindToTypeName($node->kind);
                     $context->reportError(
                         new Error(
-                            'Cannot extend non-' . $kindStr . ' type "' . $typeName . '".',
+                            "Cannot extend non-{$kindStr} type \"{$typeName}\".",
                             $defNode !== null
                                 ? [$defNode, $node]
                                 : $node,
@@ -77,7 +79,7 @@ class PossibleTypeExtensions extends ValidationRule
                     : '';
                 $context->reportError(
                     new Error(
-                        'Cannot extend type "' . $typeName . '" because it is not defined.' . $didYouMean,
+                        "Cannot extend type \"{$typeName}\" because it is not defined.{$didYouMean}",
                         $node->name,
                     ),
                 );

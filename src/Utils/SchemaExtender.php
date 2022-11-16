@@ -2,12 +2,6 @@
 
 namespace GraphQL\Utils;
 
-use function array_keys;
-use function array_map;
-use function array_merge;
-use function count;
-
-use Exception;
 use GraphQL\Error\Error;
 use GraphQL\Error\InvariantViolation;
 use GraphQL\Language\AST\DirectiveDefinitionNode;
@@ -40,6 +34,7 @@ use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\UnionType;
 use GraphQL\Type\Introspection;
 use GraphQL\Type\Schema;
+use GraphQL\Type\SchemaConfig;
 use GraphQL\Validator\DocumentValidator;
 
 /**
@@ -109,19 +104,23 @@ class SchemaExtender
             } elseif ($def instanceof SchemaExtensionNode) {
                 $schemaExtensions[] = $def;
             } elseif ($def instanceof TypeDefinitionNode) {
-                $typeDefinitionMap[$def->name->value] = $def;
+                /** @var string $name Necessary assertion for PHPStan + PHP 8.2 */
+                $name = $def->name->value;
+                $typeDefinitionMap[$name] = $def;
             } elseif ($def instanceof TypeExtensionNode) {
-                $this->typeExtensionsMap[$def->name->value][] = $def;
+                /** @var string $name Necessary assertion for PHPStan + PHP 8.2 */
+                $name = $def->name->value;
+                $this->typeExtensionsMap[$name][] = $def;
             } elseif ($def instanceof DirectiveDefinitionNode) {
                 $directiveDefinitions[] = $def;
             }
         }
 
         if (
-            count($this->typeExtensionsMap) === 0
-            && count($typeDefinitionMap) === 0
-            && count($directiveDefinitions) === 0
-            && count($schemaExtensions) === 0
+            \count($this->typeExtensionsMap) === 0
+            && \count($typeDefinitionMap) === 0
+            && \count($directiveDefinitions) === 0
+            && \count($schemaExtensions) === 0
             && $schemaDef === null
         ) {
             return $schema;
@@ -130,6 +129,7 @@ class SchemaExtender
         $this->astBuilder = new ASTDefinitionBuilder(
             $typeDefinitionMap,
             [],
+            // @phpstan-ignore-next-line no idea what is wrong here
             function (string $typeName) use ($schema): Type {
                 $existingType = $schema->getType($typeName);
                 if ($existingType === null) {
@@ -174,17 +174,21 @@ class SchemaExtender
             }
         }
 
-        $schemaExtensionASTNodes = array_merge($schema->extensionASTNodes, $schemaExtensions);
+        $schemaExtensionASTNodes = \array_merge($schema->extensionASTNodes, $schemaExtensions);
 
-        return new Schema([
-            'query' => $operationTypes['query'],
-            'mutation' => $operationTypes['mutation'],
-            'subscription' => $operationTypes['subscription'],
-            'types' => $types,
-            'directives' => $this->getMergedDirectives($schema, $directiveDefinitions),
-            'astNode' => $schema->astNode ?? $schemaDef,
-            'extensionASTNodes' => $schemaExtensionASTNodes,
-        ]);
+        return new Schema(
+            (new SchemaConfig())
+            // @phpstan-ignore-next-line the root types may be invalid, but just passing them leads to more actionable errors
+            ->setQuery($operationTypes['query'])
+            // @phpstan-ignore-next-line the root types may be invalid, but just passing them leads to more actionable errors
+            ->setMutation($operationTypes['mutation'])
+            // @phpstan-ignore-next-line the root types may be invalid, but just passing them leads to more actionable errors
+            ->setSubscription($operationTypes['subscription'])
+            ->setTypes($types)
+            ->setDirectives($this->getMergedDirectives($schema, $directiveDefinitions))
+            ->setAstNode($schema->astNode ?? $schemaDef)
+            ->setExtensionASTNodes($schemaExtensionASTNodes)
+        );
     }
 
     /**
@@ -194,7 +198,7 @@ class SchemaExtender
      */
     protected function extensionASTNodes(NamedType $type): ?array
     {
-        return array_merge(
+        return \array_merge(
             $type->extensionASTNodes ?? [],
             $this->typeExtensionsMap[$type->name] ?? []
         );
@@ -333,7 +337,7 @@ class SchemaExtender
      */
     protected function extendUnionPossibleTypes(UnionType $type): array
     {
-        $possibleTypes = array_map(
+        $possibleTypes = \array_map(
             [$this, 'extendNamedType'],
             $type->getTypes()
         );
@@ -359,7 +363,7 @@ class SchemaExtender
      */
     protected function extendImplementedInterfaces(ImplementingType $type): array
     {
-        $interfaces = array_map(
+        $interfaces = \array_map(
             [$this, 'extendNamedType'],
             $type->getInterfaces()
         );
@@ -446,7 +450,7 @@ class SchemaExtender
         $newFieldMap = [];
         $oldFieldMap = $type->getFields();
 
-        foreach (array_keys($oldFieldMap) as $fieldName) {
+        foreach (\array_keys($oldFieldMap) as $fieldName) {
             $field = $oldFieldMap[$fieldName];
 
             $newFieldMap[$fieldName] = [
@@ -549,7 +553,7 @@ class SchemaExtender
             case $type instanceof InputObjectType: return $this->extendInputObjectType($type);
             default:
                 $unconsideredType = get_class($type);
-                throw new Exception("Unconsidered type: {$unconsideredType}.");
+                throw new \Exception("Unconsidered type: {$unconsideredType}.");
         }
     }
 
@@ -576,12 +580,12 @@ class SchemaExtender
      */
     protected function getMergedDirectives(Schema $schema, array $directiveDefinitions): array
     {
-        $directives = array_map(
+        $directives = \array_map(
             [$this, 'extendDirective'],
             $schema->getDirectives()
         );
 
-        if (count($directives) === 0) {
+        if (\count($directives) === 0) {
             throw new InvariantViolation('Schema must have default directives.');
         }
 

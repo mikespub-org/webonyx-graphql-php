@@ -49,6 +49,9 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Make `Helper::emitResponse()` private, use `Helper::sendResponse()`
 - Emit unescaped UTF-8 from `StandardServer`
 - Sync input value coercion with `graphql-js` reference implementation
+- Store rules exclusively by class name in `DocumentValidator`
+- Reorder standard types as described in the GraphQL specification
+- Improve runtime performance by moving checks for duplicate/mismatching type instances to `assert()` or schema validation
 
 ### Added
 
@@ -71,6 +74,7 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Allow constructing `EnumType` from PHP enum
 - Add `TypeInfo::getParentTypeStack()` and `TypeInfo::getFieldDefStack()`
 - Include path to faulty input in coercion errors
+- Add ability to resolve abstract type of object via `__typename`
 
 ### Optimized
 
@@ -79,7 +83,8 @@ You can find and compare releases at the [GitHub release page](https://github.co
 
 ### Fixed
 
-- Avoid QueryPlan crash when multiple $fieldNodes are present
+- Avoid `QueryPlan` crash when multiple `$fieldNodes` are present
+- Allow instantiating multiple `QueryPlan` with different options
 - Clarify error when attempting to coerce anything but `array` or `stdClass` to an input object
 - Allow directives on variable definitions
 - Handle `null` parent of list in `ValuesOfCorrectType::getVisitor`
@@ -95,25 +100,6 @@ You can find and compare releases at the [GitHub release page](https://github.co
 
 ### Removed
 
-- Remove deprecated `Type::getInternalTypes()`
-- Remove deprecated `GraphQL::execute()`
-- Remove deprecated `GraphQL::executeAndReturnResult()`
-- Remove deprecated experimental CoroutineExecutor
-- Remove deprecated `FormattedError::create()` and `FormattedError::createFromPHPError()`
-- Remove deprecated `GraphQL::setPromiseAdapter()`
-- Remove deprecated `AST::getOperation()`
-- Remove deprecated constants from `BreakingChangesFinder`
-- Remove deprecated `DocumentValidator::isValidLiteralValue()`
-- Remove deprecated `Error::formatError()` and `Error::toSerializableArray()`
-- Remove deprecated `GraphQL::getInternalDirectives()`
-- Remove deprecated `Schema::isPossibleType()`
-- Remove deprecated methods from `TypeInfo`
-- Remove deprecated `Values::valueFromAST()` and `Values::isValidPHPValue()`
-- Remove deprecated public property access to `InputObjectField::$type`
-- Remove deprecated public property access to `FieldDefinition::$type`
-- Remove alias `GraphQL\Validator\Rules\AbstractQuerySecurity`, use `GraphQL\Validator\Rules\QuerySecurityRule`
-- Remove alias `GraphQL\Validator\Rules\AbstractValidationRule`, use `GraphQL\Validator\Rules\ValidationRule`
-- Remove alias `GraphQL\Utils\FindBreakingChanges`, use `GraphQL\Utils\BreakingChangesFinder`
 - Remove `OperationParams` method `getOriginalInput()` in favor of public property `$originalInput`
 - Remove `OperationParams` method `isReadOnly()` in favor of public property `$readOnly`
 - Remove `Utils::withErrorHandling()`
@@ -136,6 +122,26 @@ You can find and compare releases at the [GitHub release page](https://github.co
 - Remove `GraphQL\Utils\TypeInfo::typeFromAST()`, use `GraphQL\Utils\AST::typeFromAST()`
 - Remove `StandardServer::send500Error()`, handle non-GraphQL errors yourself
 - Remove `StandardServer::getHelper()`, use `new Helper`
+- Remove error extension field `category`, use custom error formatting if you still need it
+- Remove deprecated `Type::getInternalTypes()`
+- Remove deprecated `GraphQL::execute()`
+- Remove deprecated `GraphQL::executeAndReturnResult()`
+- Remove deprecated experimental CoroutineExecutor
+- Remove deprecated `FormattedError::create()` and `FormattedError::createFromPHPError()`
+- Remove deprecated `GraphQL::setPromiseAdapter()`
+- Remove deprecated `AST::getOperation()`
+- Remove deprecated constants from `BreakingChangesFinder`
+- Remove deprecated `DocumentValidator::isValidLiteralValue()`
+- Remove deprecated `Error::formatError()` and `Error::toSerializableArray()`
+- Remove deprecated `GraphQL::getInternalDirectives()`
+- Remove deprecated `Schema::isPossibleType()`
+- Remove deprecated methods from `TypeInfo`
+- Remove deprecated `Values::valueFromAST()` and `Values::isValidPHPValue()`
+- Remove deprecated public property access to `InputObjectField::$type`
+- Remove deprecated public property access to `FieldDefinition::$type`
+- Remove alias `GraphQL\Validator\Rules\AbstractQuerySecurity`, use `GraphQL\Validator\Rules\QuerySecurityRule`
+- Remove alias `GraphQL\Validator\Rules\AbstractValidationRule`, use `GraphQL\Validator\Rules\ValidationRule`
+- Remove alias `GraphQL\Utils\FindBreakingChanges`, use `GraphQL\Utils\BreakingChangesFinder`
 
 ## 14.11.8
 
