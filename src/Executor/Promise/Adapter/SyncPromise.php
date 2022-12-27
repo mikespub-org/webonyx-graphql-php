@@ -3,17 +3,15 @@
 namespace GraphQL\Executor\Promise\Adapter;
 
 use GraphQL\Error\InvariantViolation;
-use Throwable;
 
 /**
  * Simplistic (yet full-featured) implementation of Promises A+ spec for regular PHP `sync` mode
  * (using queue to defer promises execution).
  *
- * Note:
  * Library users are not supposed to use SyncPromise class in their resolvers.
- * Instead they should use GraphQL\Deferred which enforces $executor callback in the constructor.
+ * Instead, they should use @see \GraphQL\Deferred which enforces `$executor` callback in the constructor.
  *
- * Root SyncPromise without explicit $executor will never resolve (actually throw while trying).
+ * Root SyncPromise without explicit `$executor` will never resolve (actually throw while trying).
  * The whole point of Deferred is to ensure it never happens and that any resolver creates
  * at least one $executor to start the promise chain.
  *
@@ -38,11 +36,11 @@ class SyncPromise
      *     array{
      *         self,
      *         (callable(mixed): mixed)|null,
-     *         (callable(Throwable): mixed)|null
+     *         (callable(\Throwable): mixed)|null
      *     }
      * >
      */
-    private array $waiting = [];
+    protected array $waiting = [];
 
     public static function runQueue(): void
     {
@@ -178,7 +176,7 @@ class SyncPromise
 
     /**
      * @param (callable(mixed): mixed)|null $onFulfilled
-     * @param (callable(Throwable): mixed)|null $onRejected
+     * @param (callable(\Throwable): mixed)|null $onRejected
      */
     public function then(?callable $onFulfilled = null, ?callable $onRejected = null): self
     {

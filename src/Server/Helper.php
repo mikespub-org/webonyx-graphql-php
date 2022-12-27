@@ -15,9 +15,6 @@ use GraphQL\Language\AST\DocumentNode;
 use GraphQL\Language\Parser;
 use GraphQL\Utils\AST;
 use GraphQL\Utils\Utils;
-
-use function header;
-
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -204,8 +201,8 @@ class Helper
     public function executeBatch(ServerConfig $config, array $operations)
     {
         $promiseAdapter = $config->getPromiseAdapter() ?? Executor::getPromiseAdapter();
-        $result = [];
 
+        $result = [];
         foreach ($operations as $operation) {
             $result[] = $this->promiseToExecuteOperation($promiseAdapter, $config, $operation, true);
         }
