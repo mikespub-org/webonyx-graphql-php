@@ -27,7 +27,15 @@ use GraphQL\Type\Schema;
 /**
  * Prints the contents of a Schema in schema definition language.
  *
- * @phpstan-type Options array{sortTypes?: bool}
+ * All sorting options sort alphabetically. If not given or `false`, the original schema definition order will be used.
+ *
+ * @phpstan-type Options array{
+ *   sortArguments?: bool,
+ *   sortEnumValues?: bool,
+ *   sortFields?: bool,
+ *   sortInputFields?: bool,
+ *   sortTypes?: bool,
+ * }
  */
 class SchemaPrinter
 {
@@ -211,27 +219,20 @@ class SchemaPrinter
             return '';
         }
 
-        $preferMultipleLines = \mb_strlen($description) > 70;
-        $blockString = BlockString::print($description, '', $preferMultipleLines);
         $prefix = $indentation !== '' && ! $firstInBlock
-            ? "\n" . $indentation
+            ? "\n{$indentation}"
             : $indentation;
 
-        return $prefix . \str_replace("\n", "\n" . $indentation, $blockString) . "\n";
-    }
-
-    protected static function printDescriptionWithComments(string $description, string $indentation, bool $firstInBlock): string
-    {
-        $comment = $indentation !== '' && ! $firstInBlock ? "\n" : '';
-        foreach (\explode("\n", $description) as $line) {
-            if ($line === '') {
-                $comment .= $indentation . "#\n";
-            } else {
-                $comment .= $indentation . '# ' . $line . "\n";
-            }
+        if (count(Utils::splitLines($description)) === 1) {
+            $description = \json_encode($description, JSON_THROW_ON_ERROR);
+        } else {
+            $description = BlockString::print($description);
+            $description = $indentation !== ''
+                ? \str_replace("\n", "\n{$indentation}", $description)
+                : $description;
         }
 
-        return $comment;
+        return "{$prefix}{$description}\n";
     }
 
     /**
@@ -244,6 +245,10 @@ class SchemaPrinter
     {
         if (\count($args) === 0) {
             return '';
+        }
+
+        if (isset($options['sortArguments']) && $options['sortArguments'] === true) {
+            usort($args, static fn (Argument $left, Argument $right): int => $left->name <=> $right->name);
         }
 
         $allArgsWithoutDescription = true;
@@ -347,7 +352,13 @@ class SchemaPrinter
         $fields = [];
         $firstInBlock = true;
         $previousHasDescription = false;
-        foreach ($type->getFields() as $f) {
+        $fieldDefinitions = $type->getFields();
+
+        if (isset($options['sortFields']) && $options['sortFields'] === true) {
+            ksort($fieldDefinitions);
+        }
+
+        foreach ($fieldDefinitions as $f) {
             $hasDescription = $f->description !== null;
             if ($previousHasDescription && ! $hasDescription) {
                 $fields[] = '';
@@ -441,7 +452,13 @@ class SchemaPrinter
     {
         $values = [];
         $firstInBlock = true;
-        foreach ($type->getValues() as $value) {
+        $valueDefinitions = $type->getValues();
+
+        if (isset($options['sortEnumValues']) && $options['sortEnumValues'] === true) {
+            usort($valueDefinitions, static fn (EnumValueDefinition $left, EnumValueDefinition $right): int => $left->name <=> $right->name);
+        }
+
+        foreach ($valueDefinitions as $value) {
             $values[] = static::printDescription($options, $value, '  ', $firstInBlock)
                 . '  '
                 . $value->name
@@ -463,8 +480,13 @@ class SchemaPrinter
     {
         $fields = [];
         $firstInBlock = true;
+        $fieldDefinitions = $type->getFields();
 
-        foreach ($type->getFields() as $field) {
+        if (isset($options['sortInputFields']) && $options['sortInputFields'] === true) {
+            ksort($fieldDefinitions);
+        }
+
+        foreach ($fieldDefinitions as $field) {
             $fields[] = static::printDescription($options, $field, '  ', $firstInBlock)
                 . '  '
                 . static::printInputValue($field);

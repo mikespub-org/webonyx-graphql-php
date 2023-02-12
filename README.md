@@ -4,7 +4,7 @@
 [![Coverage Status](https://codecov.io/gh/webonyx/graphql-php/branch/master/graph/badge.svg)](https://codecov.io/gh/webonyx/graphql-php/branch/master)
 [![Latest Stable Version](https://poser.pugx.org/webonyx/graphql-php/version)](https://packagist.org/packages/webonyx/graphql-php)
 
-This is a PHP implementation of the GraphQL [specification](https://github.com/graphql/graphql-spec)
+This is a PHP implementation of the [GraphQL](https://graphql.org) [specification](https://github.com/graphql/graphql-spec)
 based on the [reference implementation in JavaScript](https://github.com/graphql/graphql-js).
 
 ## Installation
@@ -20,8 +20,6 @@ composer require webonyx/graphql-php
 Full documentation is available at [https://webonyx.github.io/graphql-php](https://webonyx.github.io/graphql-php)
 or in the [docs](docs) directory.
 
-If you don't know what GraphQL is, visit the [official website](http://graphql.org) first.
-
 ## Examples
 
 There are several ready examples in the [examples](examples) directory,
@@ -35,13 +33,12 @@ Elements that belong to the public API of this package are marked with the `@api
 Those elements are thus guaranteed to be stable within major versions. All other elements are
 not part of this backwards compatibility guarantee and may change between minor or patch versions.
 
-The most recent version is actively developed on [`master`](https://github.com/webonyx/graphql-php/tree/master)
-and will be released as `15.x`. The current stable version `14.x` receives bug fixes only.
+The most recent version is actively developed on [`master`](https://github.com/webonyx/graphql-php/tree/master).
 Older versions are no longer supported.
 
 ## Contributors
 
-This project exists thanks to [all the people](https://github.com/webonyx/graphql-php/graphs/contributors) who contribute. [[Contribute](CONTRIBUTING.md)].
+This project exists thanks to [all the people](https://github.com/webonyx/graphql-php/graphs/contributors) who [contribute](CONTRIBUTING.md).
 
 ## Backers
 
@@ -49,7 +46,7 @@ This project exists thanks to [all the people](https://github.com/webonyx/graphq
 
 ## Sponsors
 
-Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/webonyx-graphql-php#sponsor)]
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [Become a sponsor](https://opencollective.com/webonyx-graphql-php#sponsor).
 
 <a href="https://opencollective.com/webonyx-graphql-php/sponsor/0/website" target="_blank"><img src="https://opencollective.com/webonyx-graphql-php/sponsor/0/avatar.svg"></a>
 <a href="https://opencollective.com/webonyx-graphql-php/sponsor/1/website" target="_blank"><img src="https://opencollective.com/webonyx-graphql-php/sponsor/1/avatar.svg"></a>

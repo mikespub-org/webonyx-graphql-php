@@ -24,6 +24,94 @@ use function Safe\file_get_contents;
 final class VisitorTest extends ValidatorTestCase
 {
     /**
+     * @param array<int, mixed> $args
+     */
+    private function checkVisitorFnArgs(DocumentNode $ast, array $args, bool $isEdited = false): void
+    {
+        self::assertCount(5, $args);
+        [$node, $key, $parent, $path, $ancestors] = $args;
+
+        self::assertInstanceOf(Node::class, $node);
+        self::assertContains($node->kind, \array_keys(NodeKind::CLASS_MAP));
+
+        $isRoot = $key === null;
+        if ($isRoot) {
+            if (! $isEdited) {
+                self::assertEquals($ast, $node);
+            }
+
+            self::assertEquals(null, $parent);
+            self::assertEquals([], $path);
+            self::assertEquals([], $ancestors);
+
+            return;
+        }
+
+        if ($parent instanceof NodeList) {
+            self::assertIsInt($key);
+            self::assertTrue(isset($parent[$key]));
+        } else {
+            self::assertIsString($key);
+            self::assertTrue(property_exists($parent, $key));
+        }
+
+        self::assertIsArray($path);
+        self::assertEquals($key, $path[\count($path) - 1]);
+
+        self::assertIsArray($ancestors);
+        self::assertCount(\count($path) - 1, $ancestors);
+
+        if ($isEdited) {
+            return;
+        }
+
+        if ($parent instanceof NodeList) {
+            self::assertEquals($node, $parent[$key]);
+        } else {
+            /** @phpstan-ignore-next-line */
+            self::assertEquals($node, $parent->{$key});
+        }
+
+        self::assertEquals($node, $this->getNodeByPath($ast, $path));
+        $ancestorsLength = \count($ancestors);
+        for ($i = 0; $i < $ancestorsLength; ++$i) {
+            $ancestorPath = \array_slice($path, 0, $i);
+            self::assertEquals($ancestors[$i], $this->getNodeByPath($ast, $ancestorPath));
+        }
+    }
+
+    /**
+     * @param array<string|int> $path
+     *
+     * @return Node|NodeList<SelectionNode&Node>
+     */
+    private function getNodeByPath(DocumentNode $ast, array $path): object
+    {
+        $result = $ast;
+
+        foreach ($path as $key) {
+            if ($result instanceof NodeList) {
+                $result = $result[$key];
+            } else {
+                /** @phpstan-ignore-next-line */
+                $result = $result->{$key};
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @see it('handles empty visitor', () => {
+     */
+    public function testHandlesEmptyVisitor(): void
+    {
+        $ast = Parser::parse('{ a }', ['noLocation' => true]);
+        Visitor::visit($ast, []);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
      * @see it('validates path argument')
      */
     public function testValidatesPathArgument(): void
@@ -97,82 +185,9 @@ final class VisitorTest extends ValidatorTestCase
     }
 
     /**
-     * @param array<int, mixed> $args
+     * @see it('allows editing a node both on enter and on leave', () => {
      */
-    private function checkVisitorFnArgs(DocumentNode $ast, array $args, bool $isEdited = false): void
-    {
-        self::assertCount(5, $args);
-        [$node, $key, $parent, $path, $ancestors] = $args;
-
-        self::assertInstanceOf(Node::class, $node);
-        self::assertContains($node->kind, \array_keys(NodeKind::CLASS_MAP));
-
-        $isRoot = $key === null;
-        if ($isRoot) {
-            if (! $isEdited) {
-                self::assertEquals($ast, $node);
-            }
-
-            self::assertEquals(null, $parent);
-            self::assertEquals([], $path);
-            self::assertEquals([], $ancestors);
-
-            return;
-        }
-
-        if ($parent instanceof NodeList) {
-            self::assertIsInt($key);
-            self::assertTrue(isset($parent[$key]));
-        } else {
-            self::assertIsString($key);
-            self::assertObjectHasAttribute($key, $parent);
-        }
-
-        self::assertIsArray($path);
-        self::assertEquals($key, $path[\count($path) - 1]);
-
-        self::assertIsArray($ancestors);
-        self::assertCount(\count($path) - 1, $ancestors);
-
-        if ($isEdited) {
-            return;
-        }
-
-        if ($parent instanceof NodeList) {
-            self::assertEquals($node, $parent[$key]);
-        } else {
-            self::assertEquals($node, $parent->{$key});
-        }
-
-        self::assertEquals($node, $this->getNodeByPath($ast, $path));
-        $ancestorsLength = \count($ancestors);
-        for ($i = 0; $i < $ancestorsLength; ++$i) {
-            $ancestorPath = \array_slice($path, 0, $i);
-            self::assertEquals($ancestors[$i], $this->getNodeByPath($ast, $ancestorPath));
-        }
-    }
-
-    /**
-     * @param array<string|int> $path
-     *
-     * @return Node|NodeList
-     */
-    private function getNodeByPath(DocumentNode $ast, array $path): object
-    {
-        $result = $ast;
-
-        foreach ($path as $key) {
-            if ($result instanceof NodeList) {
-                $result = $result[$key];
-            } else {
-                $result = $result->{$key};
-            }
-        }
-
-        return $result;
-    }
-
-    public function testAllowsEditingNodeOnEnterAndOnLeave(): void
+    public function testAllowsEditingANodeBothOnEnterAndOnLeave(): void
     {
         $ast = Parser::parse('{ a, b, c { a, b, c } }', ['noLocation' => true]);
 
