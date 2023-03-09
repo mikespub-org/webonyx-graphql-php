@@ -199,7 +199,7 @@ final class ValidationTest extends TestCaseBase
                 $factory();
                 self::fail('Expected exception not thrown for entry ' . $index);
             } catch (InvariantViolation $e) {
-                self::assertEquals($expectedError, $e->getMessage(), 'Error in callable #' . $index);
+                self::assertSame($expectedError, $e->getMessage(), 'Error in callable #' . $index);
             }
         }
     }
@@ -218,7 +218,7 @@ final class ValidationTest extends TestCaseBase
         test: String
       }
         ');
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
 
         $schemaWithDef = BuildSchema::build('
       schema {
@@ -228,7 +228,7 @@ final class ValidationTest extends TestCaseBase
         test: String
       }
     ');
-        self::assertEquals([], $schemaWithDef->validate());
+        self::assertSame([], $schemaWithDef->validate());
     }
 
     /**
@@ -245,7 +245,7 @@ final class ValidationTest extends TestCaseBase
         test: String
       }
         ');
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
 
         $schema = BuildSchema::build('
       schema {
@@ -261,7 +261,7 @@ final class ValidationTest extends TestCaseBase
         test: String
       }
         ');
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -278,7 +278,7 @@ final class ValidationTest extends TestCaseBase
         test: String
       }
         ');
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
 
         $schema = BuildSchema::build('
       schema {
@@ -294,7 +294,7 @@ final class ValidationTest extends TestCaseBase
         test: String
       }
         ');
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -494,7 +494,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -549,6 +549,8 @@ final class ValidationTest extends TestCaseBase
      * DESCRIBE: Type System: Fields args must be properly named.
      *
      * @param Type&NamedType $type
+     *
+     * @throws InvariantViolation
      */
     private function schemaWithFieldType(Type $type): Schema
     {
@@ -579,8 +581,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but '
-                    . '"bad-name-with-dashes" does not.',
+                    'message' => 'Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "bad-name-with-dashes" does not.',
                 ],
             ]
         );
@@ -619,7 +620,7 @@ final class ValidationTest extends TestCaseBase
                 ],
             ],
         ]));
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -669,7 +670,7 @@ final class ValidationTest extends TestCaseBase
         | TypeB
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     // DESCRIBE: Type System: Input Objects must have fields
@@ -849,7 +850,7 @@ final class ValidationTest extends TestCaseBase
         field: String
       }
         ');
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -907,7 +908,7 @@ final class ValidationTest extends TestCaseBase
         intermediateSelf: AnotherInputObject
       }
         ');
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -1127,6 +1128,9 @@ final class ValidationTest extends TestCaseBase
         );
     }
 
+    /**
+     * @throws InvariantViolation
+     */
     private function schemaWithEnum(string $name): Schema
     {
         return $this->schemaWithFieldType(
@@ -1146,12 +1150,14 @@ final class ValidationTest extends TestCaseBase
     {
         foreach ($this->outputTypes as $type) {
             $schema = $this->schemaWithObjectFieldOfType($type);
-            self::assertEquals([], $schema->validate());
+            self::assertSame([], $schema->validate());
         }
     }
 
     /**
      * DESCRIBE: Type System: Objects can only implement unique interfaces.
+     *
+     * @throws InvariantViolation
      */
     private function schemaWithObjectFieldOfType(Type $fieldType): Schema
     {
@@ -1464,10 +1470,13 @@ final class ValidationTest extends TestCaseBase
     {
         foreach ($this->outputTypes as $type) {
             $schema = $this->schemaWithInterfaceFieldOfType($type);
-            self::assertEquals([], $schema->validate());
+            self::assertSame([], $schema->validate());
         }
     }
 
+    /**
+     * @throws InvariantViolation
+     */
     private function schemaWithInterfaceFieldOfType(Type $fieldType): Schema
     {
         $BadInterfaceType = new InterfaceType([
@@ -1580,10 +1589,13 @@ final class ValidationTest extends TestCaseBase
     {
         foreach ($this->inputTypes as $type) {
             $schema = $this->schemaWithArgOfType($type);
-            self::assertEquals([], $schema->validate());
+            self::assertSame([], $schema->validate());
         }
     }
 
+    /**
+     * @throws InvariantViolation
+     */
     private function schemaWithArgOfType(Type $argType): Schema
     {
         $BadObjectType = new ObjectType([
@@ -1660,10 +1672,13 @@ final class ValidationTest extends TestCaseBase
     {
         foreach ($this->inputTypes as $type) {
             $schema = $this->schemaWithInputFieldOfType($type);
-            self::assertEquals([], $schema->validate());
+            self::assertSame([], $schema->validate());
         }
     }
 
+    /**
+     * @throws InvariantViolation
+     */
     private function schemaWithInputFieldOfType(Type $inputFieldType): Schema
     {
         // @phpstan-ignore-next-line intentionally wrong
@@ -1759,7 +1774,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals(
+        self::assertSame(
             [],
             $schema->validate()
         );
@@ -1785,7 +1800,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals(
+        self::assertSame(
             [],
             $schema->validate()
         );
@@ -1810,7 +1825,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals(
+        self::assertSame(
             [],
             $schema->validate()
         );
@@ -1839,8 +1854,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field AnotherInterface.field expected but '
-                    . 'AnotherObject does not provide it.',
+                    'message' => 'Interface field AnotherInterface.field expected but AnotherObject does not provide it.',
                     'locations' => [['line' => 7, 'column' => 9], ['line' => 10, 'column' => 7]],
                 ],
             ]
@@ -1870,8 +1884,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field AnotherInterface.field expects type String but '
-                    . 'AnotherObject.field is type Int.',
+                    'message' => 'Interface field AnotherInterface.field expects type String but AnotherObject.field is type Int.',
                     'locations' => [['line' => 7, 'column' => 31], ['line' => 11, 'column' => 31]],
                 ],
             ]
@@ -1904,8 +1917,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field AnotherInterface.field expects type A but '
-                    . 'AnotherObject.field is type B.',
+                    'message' => 'Interface field AnotherInterface.field expects type A but AnotherObject.field is type B.',
                     'locations' => [['line' => 10, 'column' => 16], ['line' => 14, 'column' => 16]],
                 ],
             ]
@@ -1931,7 +1943,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -1959,7 +1971,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2047,8 +2059,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field AnotherInterface.field expects type String but '
-                        . 'AnotherObject.field is type Int.',
+                    'message' => 'Interface field AnotherInterface.field expects type String but AnotherObject.field is type Int.',
                     'locations' => [['line' => 7, 'column' => 31], ['line' => 11, 'column' => 28]],
                 ],
                 [
@@ -2116,7 +2127,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2200,7 +2211,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2226,8 +2237,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field AnotherInterface.field expects type String! '
-                    . 'but AnotherObject.field is type String.',
+                    'message' => 'Interface field AnotherInterface.field expects type String! but AnotherObject.field is type String.',
                     'locations' => [['line' => 7, 'column' => 16], ['line' => 11, 'column' => 16]],
                 ],
             ]
@@ -2261,8 +2271,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Type AnotherObject must implement SuperInterface '
-                    . 'because it is implemented by AnotherInterface.',
+                    'message' => 'Type AnotherObject must implement SuperInterface because it is implemented by AnotherInterface.',
                     'locations' => [['line' => 10, 'column' => 45], ['line' => 14, 'column' => 37]],
                 ],
             ]
@@ -2288,7 +2297,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2311,7 +2320,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2333,7 +2342,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2359,8 +2368,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field ParentInterface.field expected '
-                    . 'but ChildInterface does not provide it.',
+                    'message' => 'Interface field ParentInterface.field expected but ChildInterface does not provide it.',
                     'locations' => [['line' => 7, 'column' => 9], ['line' => 10, 'column' => 7]],
                 ],
             ]
@@ -2390,8 +2398,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field ParentInterface.field expects type String '
-                    . 'but ChildInterface.field is type Int.',
+                    'message' => 'Interface field ParentInterface.field expects type String but ChildInterface.field is type Int.',
                     'locations' => [['line' => 7, 'column' => 31], ['line' => 11, 'column' => 31]],
                 ],
             ]
@@ -2424,8 +2431,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field ParentInterface.field expects type A '
-                    . 'but ChildInterface.field is type B.',
+                    'message' => 'Interface field ParentInterface.field expects type A but ChildInterface.field is type B.',
                     'locations' => [['line' => 10, 'column' => 16], ['line' => 14, 'column' => 16]],
                 ],
             ]
@@ -2451,7 +2457,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2478,7 +2484,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2566,8 +2572,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field ParentInterface.field expects type String '
-                        . 'but ChildInterface.field is type Int.',
+                    'message' => 'Interface field ParentInterface.field expects type String but ChildInterface.field is type Int.',
                     'locations' => [['line' => 7, 'column' => 31], ['line' => 11, 'column' => 28]],
                 ],
                 [
@@ -2634,7 +2639,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2718,7 +2723,7 @@ final class ValidationTest extends TestCaseBase
       }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**
@@ -2744,8 +2749,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Interface field ParentInterface.field expects type String! '
-                    . 'but ChildInterface.field is type String.',
+                    'message' => 'Interface field ParentInterface.field expects type String! but ChildInterface.field is type String.',
                     'locations' => [['line' => 7, 'column' => 16], ['line' => 11, 'column' => 16]],
                 ],
             ]
@@ -2779,8 +2783,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Type ChildInterface must implement SuperInterface '
-                    . 'because it is implemented by ParentInterface.',
+                    'message' => 'Type ChildInterface must implement SuperInterface because it is implemented by ParentInterface.',
                     'locations' => [['line' => 10, 'column' => 44], ['line' => 14, 'column' => 43]],
                 ],
             ]
@@ -2806,8 +2809,7 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Type FooInterface cannot implement itself '
-                    . 'because it would create a circular reference.',
+                    'message' => 'Type FooInterface cannot implement itself because it would create a circular reference.',
                     'locations' => [['line' => 6, 'column' => 41]],
                 ],
             ]
@@ -2837,13 +2839,11 @@ final class ValidationTest extends TestCaseBase
             $schema->validate(),
             [
                 [
-                    'message' => 'Type FooInterface cannot implement BarInterface '
-                        . 'because it would create a circular reference.',
+                    'message' => 'Type FooInterface cannot implement BarInterface because it would create a circular reference.',
                     'locations' => [['line' => 10, 'column' => 41], ['line' => 6, 'column' => 41]],
                 ],
                 [
-                    'message' => 'Type BarInterface cannot implement FooInterface '
-                        . 'because it would create a circular reference.',
+                    'message' => 'Type BarInterface cannot implement FooInterface because it would create a circular reference.',
                     'locations' => [['line' => 6, 'column' => 41], ['line' => 10, 'column' => 41]],
                 ],
             ]
@@ -2930,7 +2930,7 @@ final class ValidationTest extends TestCaseBase
           }
         ');
 
-        self::assertEquals([], $schema->validate());
+        self::assertSame([], $schema->validate());
     }
 
     /**

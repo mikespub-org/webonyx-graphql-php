@@ -5,6 +5,7 @@ namespace GraphQL\Tests\Executor;
 use DMS\PHPUnitExtensions\ArraySubset\ArraySubsetAsserts;
 use GraphQL\Deferred;
 use GraphQL\Error\FormattedError;
+use GraphQL\Error\InvariantViolation;
 use GraphQL\Executor\ExecutionResult;
 use GraphQL\Executor\Executor;
 use GraphQL\Executor\Promise\Adapter\SyncPromise;
@@ -85,6 +86,8 @@ final class SyncTest extends TestCase
 
     /**
      * @param array<string, mixed> $expectedFinalArray
+     *
+     * @throws \Exception
      */
     private static function assertSync(array $expectedFinalArray, Promise $actualResult): void
     {
@@ -92,7 +95,7 @@ final class SyncTest extends TestCase
         $adoptedPromise = $actualResult->adoptedPromise;
 
         self::assertInstanceOf(SyncPromise::class, $adoptedPromise, $message);
-        self::assertEquals(SyncPromise::FULFILLED, $adoptedPromise->state, $message);
+        self::assertSame(SyncPromise::FULFILLED, $adoptedPromise->state, $message);
 
         $result = $adoptedPromise->result;
         self::assertInstanceOf(ExecutionResult::class, $result);
@@ -145,6 +148,9 @@ final class SyncTest extends TestCase
 
     /**
      * @param array<string, mixed> $expectedFinalArray
+     *
+     * @throws \Exception
+     * @throws InvariantViolation
      */
     private function assertAsync(array $expectedFinalArray, Promise $actualResult): void
     {
@@ -152,7 +158,7 @@ final class SyncTest extends TestCase
         $adoptedPromise = $actualResult->adoptedPromise;
 
         self::assertInstanceOf(SyncPromise::class, $adoptedPromise, $message);
-        self::assertEquals(SyncPromise::PENDING, $adoptedPromise->state, $message);
+        self::assertSame(SyncPromise::PENDING, $adoptedPromise->state, $message);
 
         $resolvedResult = $this->promiseAdapter->wait($actualResult);
         self::assertInstanceOf(ExecutionResult::class, $resolvedResult);
@@ -183,6 +189,9 @@ final class SyncTest extends TestCase
 
     /**
      * @param mixed $rootValue
+     *
+     * @throws \Exception
+     * @throws InvariantViolation
      */
     private function graphqlSync(Schema $schema, string $doc, $rootValue = null): Promise
     {

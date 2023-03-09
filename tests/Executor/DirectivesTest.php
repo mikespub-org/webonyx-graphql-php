@@ -2,6 +2,8 @@
 
 namespace GraphQL\Tests\Executor;
 
+use GraphQL\Error\InvariantViolation;
+use GraphQL\Error\SyntaxError;
 use GraphQL\Executor\Executor;
 use GraphQL\Language\Parser;
 use GraphQL\Type\Definition\ObjectType;
@@ -22,6 +24,10 @@ final class DirectivesTest extends TestCase
     ];
 
     /**
+     * @throws \JsonException
+     * @throws InvariantViolation
+     * @throws SyntaxError
+     *
      * @return array<string, mixed>
      */
     private function executeTestQuery(string $doc): array
@@ -30,6 +36,9 @@ final class DirectivesTest extends TestCase
             ->toArray();
     }
 
+    /**
+     * @throws InvariantViolation
+     */
     private static function getSchema(): Schema
     {
         return self::$schema ??= new Schema([
@@ -49,7 +58,7 @@ final class DirectivesTest extends TestCase
     public function testWorksWithoutDirectives(): void
     {
         // it('basic query works', () => {
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery('{ a, b }')
         );
@@ -61,25 +70,25 @@ final class DirectivesTest extends TestCase
     public function testWorksOnScalars(): void
     {
         // it('if true includes scalar', () => {
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery('{ a, b @include(if: true) }')
         );
 
         // it('if false omits on scalar', () => {
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery('{ a, b @include(if: false) }')
         );
 
         // it('unless false includes scalar', () => {
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery('{ a, b @skip(if: false) }')
         );
 
         // it('unless true omits scalar', () => {
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery('{ a, b @skip(if: true) }')
         );
@@ -100,7 +109,7 @@ final class DirectivesTest extends TestCase
           b
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery($q)
         );
@@ -115,7 +124,7 @@ final class DirectivesTest extends TestCase
           b
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery($q)
         );
@@ -130,7 +139,7 @@ final class DirectivesTest extends TestCase
           b
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery($q)
         );
@@ -145,7 +154,7 @@ final class DirectivesTest extends TestCase
           b
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery($q)
         );
@@ -165,7 +174,7 @@ final class DirectivesTest extends TestCase
           }
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery($q)
         );
@@ -179,7 +188,7 @@ final class DirectivesTest extends TestCase
           }
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery($q)
         );
@@ -193,7 +202,7 @@ final class DirectivesTest extends TestCase
           }
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery($q)
         );
@@ -207,7 +216,7 @@ final class DirectivesTest extends TestCase
           }
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery($q)
         );
@@ -227,7 +236,7 @@ final class DirectivesTest extends TestCase
           }
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery($q)
         );
@@ -241,7 +250,7 @@ final class DirectivesTest extends TestCase
           }
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery($q)
         );
@@ -255,7 +264,7 @@ final class DirectivesTest extends TestCase
           }
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery($q)
         );
@@ -269,7 +278,7 @@ final class DirectivesTest extends TestCase
           }
         }
         ';
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery($q)
         );
@@ -281,7 +290,7 @@ final class DirectivesTest extends TestCase
     public function testWorksWithSkipAndIncludeDirectives(): void
     {
         // it('include and no skip', () => {
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a', 'b' => 'b']],
             $this->executeTestQuery('
         {
@@ -292,7 +301,7 @@ final class DirectivesTest extends TestCase
         );
 
         // it('include and skip', () => {
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery('
         {
@@ -303,7 +312,7 @@ final class DirectivesTest extends TestCase
         );
 
         // it('no include or skip', () => {
-        self::assertEquals(
+        self::assertSame(
             ['data' => ['a' => 'a']],
             $this->executeTestQuery('
         {
