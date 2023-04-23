@@ -31,7 +31,7 @@ final class QueryComplexityTest extends QuerySecurityTestCase
             $positions = [];
 
             if ($maxComplexity < $queryComplexity && $maxComplexity !== QueryComplexity::DISABLED) {
-                $positions = [$this->createFormattedError($maxComplexity, $queryComplexity)];
+                $positions = [self::createFormattedError($maxComplexity, $queryComplexity)];
             }
 
             $this->assertDocumentValidator($query, $maxComplexity, $positions);
@@ -89,9 +89,7 @@ final class QueryComplexityTest extends QuerySecurityTestCase
         $this->assertDocumentValidators($query, 3, 4);
     }
 
-    /**
-     * @throws \InvalidArgumentException
-     */
+    /** @throws \InvalidArgumentException */
     protected function getRule(int $max = 0): QueryComplexity
     {
         self::$rule ??= new QueryComplexity($max);
@@ -205,7 +203,7 @@ final class QueryComplexityTest extends QuerySecurityTestCase
         self::assertSame($reportedError, $errors[0]);
     }
 
-    protected function getErrorMessage(int $max, int $count): string
+    protected static function getErrorMessage(int $max, int $count): string
     {
         return QueryComplexity::maxQueryComplexityErrorMessage($max, $count);
     }

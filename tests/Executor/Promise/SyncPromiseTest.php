@@ -17,7 +17,7 @@ final class SyncPromiseTest extends TestCaseBase
      *   string,
      * }>
      */
-    public function fulfilledPromiseResolveData(): iterable
+    public static function fulfilledPromiseResolveData(): iterable
     {
         $onFulfilledReturnsNull = static fn () => null;
 
@@ -29,18 +29,14 @@ final class SyncPromiseTest extends TestCaseBase
             throw new \Exception('onFulfilled throws this!');
         };
 
-        return [
-            ['test-value', null, 'test-value', null, SyncPromise::FULFILLED],
-            [\uniqid(), $onFulfilledReturnsNull, null, null, SyncPromise::FULFILLED],
-            ['test-value', $onFulfilledReturnsSameValue, 'test-value', null, SyncPromise::FULFILLED],
-            ['test-value-2', $onFulfilledReturnsOtherValue, 'other-test-value-2', null, SyncPromise::FULFILLED],
-            ['test-value-3', $onFulfilledThrows, null, 'onFulfilled throws this!', SyncPromise::REJECTED],
-        ];
+        yield ['test-value', null, 'test-value', null, SyncPromise::FULFILLED];
+        yield [\uniqid(), $onFulfilledReturnsNull, null, null, SyncPromise::FULFILLED];
+        yield ['test-value', $onFulfilledReturnsSameValue, 'test-value', null, SyncPromise::FULFILLED];
+        yield ['test-value-2', $onFulfilledReturnsOtherValue, 'other-test-value-2', null, SyncPromise::FULFILLED];
+        yield ['test-value-3', $onFulfilledThrows, null, 'onFulfilled throws this!', SyncPromise::REJECTED];
     }
 
-    /**
-     * @dataProvider fulfilledPromiseResolveData
-     */
+    /** @dataProvider fulfilledPromiseResolveData */
     public function testFulfilledPromiseCannotChangeValue(
         string $resolvedValue,
         ?callable $onFulfilled,
@@ -59,9 +55,7 @@ final class SyncPromiseTest extends TestCaseBase
         $promise->resolve($resolvedValue . '-other-value');
     }
 
-    /**
-     * @dataProvider fulfilledPromiseResolveData
-     */
+    /** @dataProvider fulfilledPromiseResolveData */
     public function testFulfilledPromiseCannotBeRejected(
         string $resolvedValue,
         ?callable $onFulfilled,
@@ -169,16 +163,12 @@ final class SyncPromiseTest extends TestCaseBase
 
         SyncPromise::runQueue();
 
-        /**
-         * @var bool $onFulfilledCalled
-         * @var bool $onRejectedCalled
-         */
         if ($expectedNextReason === null) {
-            self::assertTrue($onFulfilledCalled);
-            self::assertFalse($onRejectedCalled);
+            self::assertTrue($onFulfilledCalled); // @phpstan-ignore-line value is mutable
+            self::assertFalse($onRejectedCalled); // @phpstan-ignore-line value is mutable
         } else {
-            self::assertFalse($onFulfilledCalled);
-            self::assertTrue($onRejectedCalled);
+            self::assertFalse($onFulfilledCalled); // @phpstan-ignore-line value is mutable
+            self::assertTrue($onRejectedCalled); // @phpstan-ignore-line value is mutable
         }
 
         self::assertEquals($expectedNextValue, $actualNextValue);
@@ -186,10 +176,8 @@ final class SyncPromiseTest extends TestCaseBase
         self::assertEquals($expectedNextState, $promise->state);
     }
 
-    /**
-     * @return iterable<array{\Exception, ?callable, ?string, ?string, string}>
-     */
-    public function rejectedPromiseData(): iterable
+    /** @return iterable<array{\Exception, ?callable, ?string, ?string, string}> */
+    public static function rejectedPromiseData(): iterable
     {
         $onRejectedReturnsNull = static fn () => null;
 
@@ -203,19 +191,15 @@ final class SyncPromiseTest extends TestCaseBase
             throw new \Exception('onRejected throws other!');
         };
 
-        return [
-            // $rejectedReason, $onRejected, $expectedNextValue, $expectedNextReason, $expectedNextState
-            [new \Exception('test-reason'), null, null, 'test-reason', SyncPromise::REJECTED],
-            [new \Exception('test-reason-2'), $onRejectedReturnsNull, null, null, SyncPromise::FULFILLED],
-            [new \Exception('test-reason-3'), $onRejectedReturnsSomeValue, 'some-value', null, SyncPromise::FULFILLED],
-            [new \Exception('test-reason-4'), $onRejectedThrowsSameReason, null, 'test-reason-4', SyncPromise::REJECTED],
-            [new \Exception('test-reason-5'), $onRejectedThrowsOtherReason, null, 'onRejected throws other!', SyncPromise::REJECTED],
-        ];
+        // $rejectedReason, $onRejected, $expectedNextValue, $expectedNextReason, $expectedNextState
+        yield [new \Exception('test-reason'), null, null, 'test-reason', SyncPromise::REJECTED];
+        yield [new \Exception('test-reason-2'), $onRejectedReturnsNull, null, null, SyncPromise::FULFILLED];
+        yield [new \Exception('test-reason-3'), $onRejectedReturnsSomeValue, 'some-value', null, SyncPromise::FULFILLED];
+        yield [new \Exception('test-reason-4'), $onRejectedThrowsSameReason, null, 'test-reason-4', SyncPromise::REJECTED];
+        yield [new \Exception('test-reason-5'), $onRejectedThrowsOtherReason, null, 'onRejected throws other!', SyncPromise::REJECTED];
     }
 
-    /**
-     * @dataProvider rejectedPromiseData
-     */
+    /** @dataProvider rejectedPromiseData */
     public function testRejectedPromiseCannotChangeReason(
         \Throwable $rejectedReason,
         ?callable $onRejected,
@@ -234,9 +218,7 @@ final class SyncPromiseTest extends TestCaseBase
         $promise->reject(new \Exception('other-reason'));
     }
 
-    /**
-     * @dataProvider rejectedPromiseData
-     */
+    /** @dataProvider rejectedPromiseData */
     public function testRejectedPromiseCannotBeResolved(
         \Throwable $rejectedReason,
         ?callable $onRejected,
@@ -255,9 +237,7 @@ final class SyncPromiseTest extends TestCaseBase
         $promise->resolve('anything');
     }
 
-    /**
-     * @dataProvider rejectedPromiseData
-     */
+    /** @dataProvider rejectedPromiseData */
     public function testRejectedPromise(
         \Throwable $rejectedReason,
         ?callable $onRejected,
