@@ -21,7 +21,7 @@ class PhpEnumType extends EnumType
      * @param class-string<\UnitEnum> $enum
      * @param string|null $name The name the enum will have in the schema, defaults to the basename of the given class
      */
-    public function __construct(string $enum, string $name = null)
+    public function __construct(string $enum, ?string $name = null)
     {
         $this->enumClass = $enum;
         $reflection = new \ReflectionEnum($enum);
@@ -47,12 +47,22 @@ class PhpEnumType extends EnumType
 
     public function serialize($value): string
     {
-        if (! is_a($value, $this->enumClass)) {
+        if (! ($value instanceof $this->enumClass)) {
             $notEnum = Utils::printSafe($value);
             throw new SerializationError("Cannot serialize value as enum: {$notEnum}, expected instance of {$this->enumClass}.");
         }
 
         return $value->name;
+    }
+
+    public function parseValue($value)
+    {
+        // Can happen when variable values undergo a serialization cycle before execution
+        if ($value instanceof $this->enumClass) {
+            return $value;
+        }
+
+        return parent::parseValue($value);
     }
 
     /** @param class-string $class */
