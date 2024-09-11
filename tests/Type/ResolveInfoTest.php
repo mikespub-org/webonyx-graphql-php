@@ -3,6 +3,7 @@
 namespace GraphQL\Tests\Type;
 
 use GraphQL\GraphQL;
+use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
@@ -444,5 +445,207 @@ final class ResolveInfoTest extends TestCase
         self::assertTrue($hasCalled);
         self::assertEquals(['data' => ['level1' => null]], $result);
         self::assertEquals($expectedDeepSelection, $actualDeepSelection);
+    }
+
+    public function testPathAndUnaliasedPath(): void
+    {
+        $resolveInfo = new ObjectType([
+            'name' => 'ResolveInfo',
+            'fields' => [
+                'path' => Type::listOf(Type::id()),
+                'unaliasedPath' => Type::listOf(Type::id()),
+            ],
+        ]);
+
+        $returnResolveInfo = static fn ($value, array $args, $context, ResolveInfo $info): ResolveInfo => $info;
+        $level2 = new ObjectType([
+            'name' => 'level2',
+            'fields' => [
+                'info1' => [
+                    'type' => $resolveInfo,
+                    'resolve' => $returnResolveInfo,
+                ],
+                'info2' => [
+                    'type' => $resolveInfo,
+                    'resolve' => $returnResolveInfo,
+                ],
+            ],
+        ]);
+
+        $level1 = new ObjectType([
+            'name' => 'level1',
+            'fields' => [
+                'level2' => [
+                    'type' => $level2,
+                    'resolve' => fn (): bool => true,
+                ],
+            ],
+        ]);
+
+        $query = new ObjectType([
+            'name' => 'Query',
+            'fields' => [
+                'level1' => [
+                    'type' => $level1,
+                    'resolve' => fn (): bool => true,
+                ],
+            ],
+        ]);
+
+        $result = GraphQL::executeQuery(
+            new Schema(['query' => $query]),
+            <<<GRAPHQL
+            query {
+              level1 {
+                level2 {
+                  info1 {
+                    path
+                    unaliasedPath
+                  }
+                }
+                level1000: level2 {
+                  info2 {
+                    path
+                    unaliasedPath
+                  }
+                }
+              }
+            }
+            GRAPHQL
+        )->toArray();
+
+        self::assertSame([
+            'data' => [
+                'level1' => [
+                    'level2' => [
+                        'info1' => [
+                            'path' => ['level1', 'level2', 'info1'],
+                            'unaliasedPath' => ['level1', 'level2', 'info1'],
+                        ],
+                    ],
+                    'level1000' => [
+                        'info2' => [
+                            'path' => ['level1', 'level1000', 'info2'],
+                            'unaliasedPath' => ['level1', 'level2', 'info2'],
+                        ],
+                    ],
+                ],
+            ],
+        ], $result);
+    }
+
+    public function testPathAndUnaliasedPathForList(): void
+    {
+        $resolveInfo = new ObjectType([
+            'name' => 'ResolveInfo',
+            'fields' => [
+                'path' => Type::listOf(Type::id()),
+                'unaliasedPath' => Type::listOf(Type::id()),
+            ],
+        ]);
+
+        $returnResolveInfo = static fn ($value, array $args, $context, ResolveInfo $info): ResolveInfo => $info;
+        $level2 = new ObjectType([
+            'name' => 'level2',
+            'fields' => [
+                'info1' => [
+                    'type' => $resolveInfo,
+                    'resolve' => $returnResolveInfo,
+                ],
+                'info2' => [
+                    'type' => $resolveInfo,
+                    'resolve' => $returnResolveInfo,
+                ],
+            ],
+        ]);
+
+        $level1 = new ObjectType([
+            'name' => 'level1',
+            'fields' => [
+                'level2' => [
+                    'type' => ListOfType::listOf($level2),
+                    'resolve' => fn (): array => ['a', 'b', 'c'],
+                ],
+            ],
+        ]);
+
+        $query = new ObjectType([
+            'name' => 'Query',
+            'fields' => [
+                'level1' => [
+                    'type' => $level1,
+                    'resolve' => fn (): bool => true,
+                ],
+            ],
+        ]);
+
+        $result = GraphQL::executeQuery(
+            new Schema(['query' => $query]),
+            <<<GRAPHQL
+            query {
+              level1 {
+                level2 {
+                  info1 {
+                    path
+                    unaliasedPath
+                  }
+                }
+                level1000: level2 {
+                  info2 {
+                    path
+                    unaliasedPath
+                  }
+                }
+              }
+            }
+            GRAPHQL
+        )->toArray();
+
+        self::assertSame([
+            'data' => [
+                'level1' => [
+                    'level2' => [
+                        [
+                            'info1' => [
+                                'path' => ['level1', 'level2', '0', 'info1'],
+                                'unaliasedPath' => ['level1', 'level2', '0', 'info1'],
+                            ],
+                        ],
+                        [
+                            'info1' => [
+                                'path' => ['level1', 'level2', '1', 'info1'],
+                                'unaliasedPath' => ['level1', 'level2', '1', 'info1'],
+                            ],
+                        ],
+                        [
+                            'info1' => [
+                                'path' => ['level1', 'level2', '2', 'info1'],
+                                'unaliasedPath' => ['level1', 'level2', '2', 'info1'],
+                            ],
+                        ],
+                    ],
+                    'level1000' => [
+                        [
+                            'info2' => [
+                                'path' => ['level1', 'level1000', '0', 'info2'],
+                                'unaliasedPath' => ['level1', 'level2', '0', 'info2'],
+                            ],
+                        ],
+                        [
+                            'info2' => [
+                                'path' => ['level1', 'level1000', '1', 'info2'],
+                                'unaliasedPath' => ['level1', 'level2', '1', 'info2'],
+                            ],
+                        ],
+                        [
+                            'info2' => [
+                                'path' => ['level1', 'level1000', '2', 'info2'],
+                                'unaliasedPath' => ['level1', 'level2', '2', 'info2'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ], $result);
     }
 }

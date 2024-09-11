@@ -354,7 +354,7 @@ final class ValidationTest extends TestCaseBase
     }
 
     /**
-     * @param array<int, Error>                                                                         $errors
+     * @param array<int, Error> $errors
      * @param array<int, array{message: string, locations?: array<int, array{line: int, column: int}>}> $expected
      */
     private function assertMatchesValidationMessage(array $errors, array $expected): void
@@ -567,7 +567,7 @@ final class ValidationTest extends TestCaseBase
             ])
         );
         $schema->assertValid();
-        self::assertDidNotCrash();
+        $this->assertDidNotCrash();
     }
 
     /** @see it('accepts field args with valid names') */
