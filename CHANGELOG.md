@@ -9,6 +9,72 @@ You can find and compare releases at the [GitHub release page](https://github.co
 
 ## Unreleased
 
+## v15.19.1
+
+### Fixed
+
+- Handle fields that return lists in `ResolveInfo::getFieldSelectionWithAliases` https://github.com/webonyx/graphql-php/pull/1664
+
+## v15.19.0
+
+### Added
+
+- Add method `getFieldSelectionWithAliases` to class `ResolveInfo` https://github.com/webonyx/graphql-php/pull/1648
+
+## v15.18.1
+
+### Fixed
+
+- Reset static caches of instances using standard types when overriding them https://github.com/webonyx/graphql-php/pull/1632
+
+## v15.18.0
+
+### Added
+
+- Propagate error messages of client-safe exceptions during `parseValue` https://github.com/webonyx/graphql-php/pull/1624
+
+## v15.17.0
+
+### Added
+
+- Allow customizing PhpEnumType https://github.com/webonyx/graphql-php/pull/1623
+
+## v15.16.1
+
+### Fixed
+
+- Make field args mapper optional https://github.com/webonyx/graphql-php/pull/1622
+
+## v15.16.0
+
+### Added
+
+- Create field args mapper and cache args resolution https://github.com/webonyx/graphql-php/pull/1587
+
+## v15.15.0
+
+### Added
+
+- Add field config decorator when building schema from SDL https://github.com/webonyx/graphql-php/pull/1590
+
+## v15.14.3
+
+### Fixed
+
+- Serialize `BackedEnum` instances by name, not value https://github.com/webonyx/graphql-php/pull/1618
+
+## v15.14.2
+
+### Changed
+
+- Annotate return value of `Helper::validateOperationParams` as list https://github.com/webonyx/graphql-php/pull/1615
+
+## v15.14.1
+
+### Changed
+
+- Narrow type of execution errors from `array` to `list` https://github.com/webonyx/graphql-php/pull/1597
+
 ## v15.14.0
 
 ### Added
