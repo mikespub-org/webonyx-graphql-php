@@ -94,12 +94,10 @@ class BuildSchema
      * document.
      *
      * @param DocumentNode|Source|string $source
+     * @param array<string, bool> $options
      *
      * @phpstan-param TypeConfigDecorator|null $typeConfigDecorator
      * @phpstan-param FieldConfigDecorator|null $fieldConfigDecorator
-     *
-     * @param array<string, bool> $options
-     *
      * @phpstan-param BuildSchemaOptions $options
      *
      * @api
@@ -131,11 +129,10 @@ class BuildSchema
      * Given that AST it constructs a @see \GraphQL\Type\Schema. The resulting schema
      * has no resolve methods, so execution will use default resolvers.
      *
-     * @phpstan-param TypeConfigDecorator|null $typeConfigDecorator
-     * @phpstan-param FieldConfigDecorator|null $fieldConfigDecorator
-     *
      * @param array<string, bool> $options
      *
+     * @phpstan-param TypeConfigDecorator|null $typeConfigDecorator
+     * @phpstan-param FieldConfigDecorator|null $fieldConfigDecorator
      * @phpstan-param BuildSchemaOptions $options
      *
      * @api
@@ -218,7 +215,7 @@ class BuildSchema
             $this->fieldConfigDecorator
         );
 
-        $directives = \array_map(
+        $directives = array_map(
             [$definitionBuilder, 'buildDirective'],
             $directiveDefs
         );
@@ -238,6 +235,9 @@ class BuildSchema
         if (! isset($directivesByName['deprecated'])) {
             $directives[] = Directive::deprecatedDirective();
         }
+        if (! isset($directivesByName['oneOf'])) {
+            $directives[] = Directive::oneOfDirective();
+        }
 
         // Note: While this could make early assertions to get the correctly
         // typed values below, that would throw immediately while type system
@@ -245,24 +245,24 @@ class BuildSchema
         return new Schema(
             (new SchemaConfig())
             // @phpstan-ignore-next-line
-            ->setQuery(isset($operationTypes['query'])
-                ? $definitionBuilder->maybeBuildType($operationTypes['query'])
-                : null)
+                ->setQuery(isset($operationTypes['query'])
+                    ? $definitionBuilder->maybeBuildType($operationTypes['query'])
+                    : null)
             // @phpstan-ignore-next-line
-            ->setMutation(isset($operationTypes['mutation'])
-                ? $definitionBuilder->maybeBuildType($operationTypes['mutation'])
-                : null)
+                ->setMutation(isset($operationTypes['mutation'])
+                    ? $definitionBuilder->maybeBuildType($operationTypes['mutation'])
+                    : null)
             // @phpstan-ignore-next-line
-            ->setSubscription(isset($operationTypes['subscription'])
-                ? $definitionBuilder->maybeBuildType($operationTypes['subscription'])
-                : null)
-            ->setTypeLoader(static fn (string $name): ?Type => $definitionBuilder->maybeBuildType($name))
-            ->setDirectives($directives)
-            ->setAstNode($schemaDef)
-            ->setTypes(fn (): array => \array_map(
-                static fn (TypeDefinitionNode $def): Type => $definitionBuilder->buildType($def->getName()->value),
-                $typeDefinitionsMap,
-            ))
+                ->setSubscription(isset($operationTypes['subscription'])
+                    ? $definitionBuilder->maybeBuildType($operationTypes['subscription'])
+                    : null)
+                ->setTypeLoader(static fn (string $name): ?Type => $definitionBuilder->maybeBuildType($name))
+                ->setDirectives($directives)
+                ->setAstNode($schemaDef)
+                ->setTypes(fn (): array => array_map(
+                    static fn (TypeDefinitionNode $def): Type => $definitionBuilder->buildType($def->getName()->value),
+                    $typeDefinitionsMap,
+                ))
         );
     }
 

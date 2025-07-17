@@ -55,7 +55,9 @@ final class SchemaPrinterTest extends TestCase
             'fields' => ['singleField' => $fieldConfig],
         ]);
 
-        return new Schema(['query' => $query]);
+        return new Schema([
+            'query' => $query,
+        ]);
     }
 
     /** @see it('Prints String Field') */
@@ -213,7 +215,9 @@ final class SchemaPrinterTest extends TestCase
             'name' => 'Foo',
             'fields' => ['str' => ['type' => Type::string()]],
         ]);
-        $schema = new Schema(['types' => [$fooType]]);
+        $schema = new Schema([
+            'types' => [$fooType],
+        ]);
 
         self::assertPrintedSchemaEquals(
             <<<'GRAPHQL'
@@ -250,7 +254,9 @@ final class SchemaPrinterTest extends TestCase
                 ],
             ],
         ]);
-        $schema = new Schema(['types' => [$fooType]]);
+        $schema = new Schema([
+            'types' => [$fooType],
+        ]);
 
         self::assertPrintedSchemaEquals(
             <<<'GRAPHQL'
@@ -559,7 +565,9 @@ final class SchemaPrinterTest extends TestCase
             'interfaces' => [$fooType],
         ]);
 
-        $schema = new Schema(['types' => [$barType]]);
+        $schema = new Schema([
+            'types' => [$barType],
+        ]);
 
         self::assertPrintedSchemaEquals(
             <<<'GRAPHQL'
@@ -598,7 +606,9 @@ final class SchemaPrinterTest extends TestCase
             'interfaces' => [$fooType, $bazType],
         ]);
 
-        $schema = new Schema(['types' => [$barType]]);
+        $schema = new Schema([
+            'types' => [$barType],
+        ]);
 
         self::assertPrintedSchemaEquals(
             <<<'GRAPHQL'
@@ -739,11 +749,39 @@ final class SchemaPrinterTest extends TestCase
             'fields' => ['int' => ['type' => Type::int()]],
         ]);
 
-        $schema = new Schema(['types' => [$inputType]]);
+        $schema = new Schema([
+            'types' => [$inputType],
+        ]);
 
         self::assertPrintedSchemaEquals(
             <<<'GRAPHQL'
             input InputType {
+              int: Int
+            }
+
+            GRAPHQL,
+            $schema
+        );
+    }
+
+    /** @see it('Print Input Type with @oneOf directive') */
+    public function testInputTypeWithOneOfDirective(): void
+    {
+        $inputType = new InputObjectType([
+            'name' => 'InputType',
+            'isOneOf' => true,
+            'fields' => [
+                'int' => Type::int(),
+            ],
+        ]);
+
+        $schema = new Schema([
+            'types' => [$inputType],
+        ]);
+
+        self::assertPrintedSchemaEquals(
+            <<<'GRAPHQL'
+            input InputType @oneOf {
               int: Int
             }
 
@@ -760,7 +798,9 @@ final class SchemaPrinterTest extends TestCase
             'serialize' => static fn () => null,
         ]);
 
-        $schema = new Schema(['types' => [$oddType]]);
+        $schema = new Schema([
+            'types' => [$oddType],
+        ]);
 
         self::assertPrintedSchemaEquals(
             <<<'GRAPHQL'
@@ -783,7 +823,9 @@ final class SchemaPrinterTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['types' => [$RGBType]]);
+        $schema = new Schema([
+            'types' => [$RGBType],
+        ]);
 
         self::assertPrintedSchemaEquals(
             <<<'GRAPHQL'
@@ -1011,6 +1053,9 @@ final class SchemaPrinterTest extends TestCase
         reason: String = "No longer supported"
       ) on FIELD_DEFINITION | ENUM_VALUE | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 
+      "Indicates that an Input Object is a OneOf Input Object (and thus requires exactly one of its fields be provided)."
+      directive @oneOf on INPUT_OBJECT
+
       "A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations."
       type __Schema {
         "A list of all types supported by this server."
@@ -1044,6 +1089,7 @@ final class SchemaPrinterTest extends TestCase
         enumValues(includeDeprecated: Boolean = false): [__EnumValue!]
         inputFields(includeDeprecated: Boolean = false): [__InputValue!]
         ofType: __Type
+        isOneOf: Boolean
       }
 
       "An enum describing what kind of type a given `__Type` is."

@@ -272,11 +272,12 @@ final class BuildSchemaTest extends TestCaseBase
     {
         $schema = BuildSchema::buildAST(Parser::parse('type Query'));
 
-        // TODO switch to 4 when adding @specifiedBy - see https://github.com/webonyx/graphql-php/issues/1140
-        self::assertCount(3, $schema->getDirectives());
+        // TODO switch to 5 when adding @specifiedBy - see https://github.com/webonyx/graphql-php/issues/1140
+        self::assertCount(4, $schema->getDirectives());
         self::assertSame(Directive::skipDirective(), $schema->getDirective('skip'));
         self::assertSame(Directive::includeDirective(), $schema->getDirective('include'));
         self::assertSame(Directive::deprecatedDirective(), $schema->getDirective('deprecated'));
+        self::assertSame(Directive::oneOfDirective(), $schema->getDirective('oneOf'));
 
         self::markTestIncomplete('See https://github.com/webonyx/graphql-php/issues/1140');
         self::assertSame(Directive::specifiedByDirective(), $schema->getDirective('specifiedBy'));
@@ -292,10 +293,11 @@ final class BuildSchemaTest extends TestCaseBase
             directive @specifiedBy on FIELD_DEFINITION
         '));
 
-        self::assertCount(4, $schema->getDirectives());
+        self::assertCount(5, $schema->getDirectives());
         self::assertNotEquals(Directive::skipDirective(), $schema->getDirective('skip'));
         self::assertNotEquals(Directive::includeDirective(), $schema->getDirective('include'));
         self::assertNotEquals(Directive::deprecatedDirective(), $schema->getDirective('deprecated'));
+        self::assertSame(Directive::oneOfDirective(), $schema->getDirective('oneOf'));
 
         self::markTestIncomplete('See https://github.com/webonyx/graphql-php/issues/1140');
         self::assertNotEquals(Directive::specifiedByDirective(), $schema->getDirective('specifiedBy'));
@@ -310,12 +312,13 @@ final class BuildSchemaTest extends TestCaseBase
             GRAPHQL;
         $schema = BuildSchema::buildAST(Parser::parse($sdl));
 
-        // TODO switch to 5 when adding @specifiedBy - see https://github.com/webonyx/graphql-php/issues/1140
-        self::assertCount(4, $schema->getDirectives());
+        // TODO switch to 6 when adding @specifiedBy - see https://github.com/webonyx/graphql-php/issues/1140
+        self::assertCount(5, $schema->getDirectives());
         self::assertNotNull($schema->getDirective('foo'));
         self::assertNotNull($schema->getDirective('skip'));
         self::assertNotNull($schema->getDirective('include'));
         self::assertNotNull($schema->getDirective('deprecated'));
+        self::assertNotNull($schema->getDirective('oneOf'));
 
         self::markTestIncomplete('See https://github.com/webonyx/graphql-php/issues/1140');
         self::assertNotNull($schema->getDirective('specifiedBy'));
@@ -1039,6 +1042,39 @@ final class BuildSchemaTest extends TestCaseBase
         self::assertSame($inputSDL, $this->printAllASTNodes($someInput));
     }
 
+    /** @see it('Correctly extend input object type with @oneOf directive') */
+    public function testCorrectlyExtendInputObjectTypeWithOneOfDirective(): void
+    {
+        $inputSDL = <<<'GRAPHQL'
+            input SomeInput {
+              first: String
+            }
+            
+            extend input SomeInput @oneOf {
+              second: Int
+            }
+            
+            GRAPHQL;
+
+        $schema = BuildSchema::build($inputSDL);
+
+        $someInput = $schema->getType('SomeInput');
+        assert($someInput instanceof InputObjectType);
+
+        // Verify that the @oneOf directive from the extension is properly applied
+        self::assertTrue($someInput->isOneOf());
+
+        $expectedSomeInputSDL = <<<'GRAPHQL'
+            input SomeInput @oneOf {
+              first: String
+              second: Int
+            }
+            GRAPHQL;
+
+        self::assertSame($expectedSomeInputSDL, SchemaPrinter::printType($someInput));
+        self::assertSame($inputSDL, $this->printAllASTNodes($someInput));
+    }
+
     /** @see it('Correctly assign AST nodes') */
     public function testCorrectlyAssignASTNodes(): void
     {
@@ -1212,7 +1248,7 @@ final class BuildSchemaTest extends TestCaseBase
     /** @see it('Do not override standard types') */
     public function testDoNotOverrideStandardTypes(): void
     {
-        // NOTE: not sure it's desired behaviour to just silently ignore override
+        // NOTE: not sure it's desired behavior to just silently ignore override
         // attempts so just documenting it here.
 
         $schema = BuildSchema::build('
@@ -1363,7 +1399,7 @@ final class BuildSchemaTest extends TestCaseBase
         self::assertInstanceOf(\Closure::class, $defaultConfig['interfaces']);
         self::assertArrayHasKey('description', $defaultConfig);
         self::assertCount(6, $defaultConfig);
-        self::assertSame(['Query', 'Color', 'Hello'], \array_keys($allNodesMap));
+        self::assertSame(['Query', 'Color', 'Hello'], array_keys($allNodesMap));
 
         $query = $schema->getType('Query');
         self::assertInstanceOf(ObjectType::class, $query);
@@ -1390,7 +1426,7 @@ final class BuildSchemaTest extends TestCaseBase
             $defaultConfig['values']
         );
         self::assertCount(5, $defaultConfig); // 3 + astNode + extensionASTNodes
-        self::assertSame(['Query', 'Color', 'Hello'], \array_keys($allNodesMap));
+        self::assertSame(['Query', 'Color', 'Hello'], array_keys($allNodesMap));
 
         $color = $schema->getType('Color');
         self::assertInstanceOf(EnumType::class, $color);
@@ -1404,7 +1440,7 @@ final class BuildSchemaTest extends TestCaseBase
         self::assertArrayHasKey('description', $defaultConfig);
         self::assertArrayHasKey('interfaces', $defaultConfig);
         self::assertCount(6, $defaultConfig);
-        self::assertSame(['Query', 'Color', 'Hello'], \array_keys($allNodesMap));
+        self::assertSame(['Query', 'Color', 'Hello'], array_keys($allNodesMap));
 
         $hello = $schema->getType('Hello');
         self::assertInstanceOf(InterfaceType::class, $hello);
@@ -1451,15 +1487,15 @@ final class BuildSchemaTest extends TestCaseBase
         self::assertSame(['Query'], $created);
 
         $schema->getType('Color');
-        /** @var array<string> $created reset the type for PHPStan */
+        /** @phpstan-ignore staticMethod.impossibleType */
         self::assertSame(['Query', 'Color'], $created);
 
         $schema->getType('Hello');
-        /** @var array<string> $created reset the type for PHPStan */
+        /** @phpstan-ignore staticMethod.impossibleType */
         self::assertSame(['Query', 'Color', 'Hello'], $created);
 
         $types = $schema->getTypeMap();
-        /** @var array<string> $created reset the type for PHPStan */
+        /** @phpstan-ignore staticMethod.impossibleType */
         self::assertSame(['Query', 'Color', 'Hello', 'World'], $created);
 
         self::assertArrayHasKey('Query', $types);
@@ -1481,12 +1517,12 @@ final class BuildSchemaTest extends TestCaseBase
             interface Bar
             GRAPHQL;
 
-        $sdl = \implode("\n", [$defaultSdl, $baseSdl, ...$sdlExts]);
+        $sdl = implode("\n", [$defaultSdl, $baseSdl, ...$sdlExts]);
         $schema = BuildSchema::build($sdl);
         $myType = $schema->getType('MyType');
         self::assertNotNull($myType);
         self::assertSame($expectedSdl, SchemaPrinter::printType($myType));
-        self::assertCount(\count($sdlExts), $myType->extensionASTNodes);
+        self::assertCount(count($sdlExts), $myType->extensionASTNodes);
         $assert($myType);
     }
 

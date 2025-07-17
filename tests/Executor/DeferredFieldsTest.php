@@ -61,7 +61,7 @@ final class DeferredFieldsTest extends TestCase
 
     private ObjectType $queryType;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->storyDataSource = [
             ['id' => 1, 'authorId' => 1, 'title' => 'Story #1', 'categoryIds' => [2, 3]],
@@ -157,9 +157,9 @@ final class DeferredFieldsTest extends TestCase
                     'resolve' => function ($category, array $args, $context, ResolveInfo $info): array {
                         $this->paths[] = $info->path;
 
-                        return \array_filter(
+                        return array_filter(
                             $this->storyDataSource,
-                            static fn ($story): bool => \in_array($category['id'], $story['categoryIds'], true)
+                            static fn ($story): bool => in_array($category['id'], $story['categoryIds'], true)
                         );
                     },
                 ],
@@ -208,7 +208,7 @@ final class DeferredFieldsTest extends TestCase
                     'resolve' => function ($rootValue, array $args, $context, ResolveInfo $info): array {
                         $this->paths[] = $info->path;
 
-                        return \array_filter(
+                        return array_filter(
                             $this->storyDataSource,
                             static fn ($story): bool => $story['id'] % 2 === 1
                         );
@@ -452,7 +452,9 @@ final class DeferredFieldsTest extends TestCase
             },
         ]);
 
-        $schema = new Schema(['query' => $complexType]);
+        $schema = new Schema([
+            'query' => $complexType,
+        ]);
 
         $query = Parser::parse('
             {
@@ -661,7 +663,7 @@ final class DeferredFieldsTest extends TestCase
      */
     private function assertPathsMatch(array $expectedPaths): void
     {
-        self::assertCount(\count($expectedPaths), $this->paths);
+        self::assertCount(count($expectedPaths), $this->paths);
         foreach ($expectedPaths as $expectedPath) {
             self::assertContains($expectedPath, $this->paths, 'Missing path: ' . json_encode($expectedPath, JSON_THROW_ON_ERROR));
         }

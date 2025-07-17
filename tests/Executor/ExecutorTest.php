@@ -156,7 +156,9 @@ final class ExecutorTest extends TestCase
                 'deeper' => ['type' => Type::listOf($dataType)],
             ],
         ]);
-        $schema = new Schema(['query' => $dataType]);
+        $schema = new Schema([
+            'query' => $dataType,
+        ]);
 
         self::assertEquals(
             $expected,
@@ -205,7 +207,9 @@ final class ExecutorTest extends TestCase
             },
         ]);
 
-        $schema = new Schema(['query' => $Type]);
+        $schema = new Schema([
+            'query' => $Type,
+        ]);
         $expected = [
             'data' => [
                 'a' => 'Apple',
@@ -230,7 +234,7 @@ final class ExecutorTest extends TestCase
     {
         $ast = Parser::parse('query ($var: String) { result: test }');
 
-        /** @var ResolveInfo $info */
+        /** @var ResolveInfo|null $info */
         $info = null;
         $schema = new Schema([
             'query' => new ObjectType([
@@ -249,6 +253,8 @@ final class ExecutorTest extends TestCase
         $rootValue = ['root' => 'val'];
 
         Executor::execute($schema, $ast, $rootValue, null, ['var' => '123']);
+
+        self::assertNotNull($info);
 
         /** @var OperationDefinitionNode $operationDefinition */
         $operationDefinition = $ast->definitions[0];
@@ -327,7 +333,7 @@ final class ExecutorTest extends TestCase
             ]),
         ]);
         Executor::execute($schema, $docAst, null, null, [], 'Example');
-        self::assertSame($gotHere, true);
+        self::assertTrue($gotHere);
     }
 
     public function testArgsMapper(): void
@@ -463,15 +469,7 @@ final class ExecutorTest extends TestCase
                 throw new UserError('Error getting asyncReturnError');
             }),
             'asyncReturnErrorWithExtensions' => static fn (): Deferred => new Deferred(static function (): void {
-                throw new Error(
-                    'Error getting asyncReturnErrorWithExtensions',
-                    null,
-                    null,
-                    [],
-                    null,
-                    null,
-                    ['foo' => 'bar']
-                );
+                throw new Error('Error getting asyncReturnErrorWithExtensions', null, null, [], null, null, ['foo' => 'bar']);
             }),
         ];
 
@@ -832,7 +830,9 @@ final class ExecutorTest extends TestCase
                 'e' => ['type' => Type::string()],
             ],
         ]);
-        $schema = new Schema(['query' => $queryType]);
+        $schema = new Schema([
+            'query' => $queryType,
+        ]);
 
         $expected = [
             'data' => [

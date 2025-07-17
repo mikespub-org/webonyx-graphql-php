@@ -53,6 +53,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'OBJECT',
                             'name' => 'SomeObject',
+                            'isOneOf' => null,
                             'fields' => [
                                 [
                                     'name' => 'someField',
@@ -74,6 +75,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'SCALAR',
                             'name' => 'String',
+                            'isOneOf' => null,
                             'fields' => null,
                             'inputFields' => null,
                             'interfaces' => null,
@@ -83,6 +85,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'SCALAR',
                             'name' => 'Boolean',
+                            'isOneOf' => null,
                             'fields' => null,
                             'inputFields' => null,
                             'interfaces' => null,
@@ -92,6 +95,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'OBJECT',
                             'name' => '__Schema',
+                            'isOneOf' => null,
                             'fields' => [
                                 0 => [
                                     'name' => 'types',
@@ -185,6 +189,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'OBJECT',
                             'name' => '__Type',
+                            'isOneOf' => null,
                             'fields' => [
                                 0 => [
                                     'name' => 'kind',
@@ -365,6 +370,17 @@ final class IntrospectionTest extends TestCase
                                     'isDeprecated' => false,
                                     'deprecationReason' => null,
                                 ],
+                                9 => [
+                                    'name' => 'isOneOf',
+                                    'args' => [],
+                                    'type' => [
+                                        'kind' => 'SCALAR',
+                                        'name' => 'Boolean',
+                                        'ofType' => null,
+                                    ],
+                                    'isDeprecated' => false,
+                                    'deprecationReason' => null,
+                                ],
                             ],
                             'inputFields' => null,
                             'interfaces' => [],
@@ -374,6 +390,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'ENUM',
                             'name' => '__TypeKind',
+                            'isOneOf' => null,
                             'fields' => null,
                             'inputFields' => null,
                             'interfaces' => null,
@@ -424,6 +441,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'OBJECT',
                             'name' => '__Field',
+                            'isOneOf' => null,
                             'fields' => [
                                 0 => [
                                     'name' => 'name',
@@ -536,6 +554,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'OBJECT',
                             'name' => '__InputValue',
+                            'isOneOf' => null,
                             'fields' => [
                                 0 => [
                                     'name' => 'name',
@@ -624,6 +643,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'OBJECT',
                             'name' => '__EnumValue',
+                            'isOneOf' => null,
                             'fields' => [
                                 0 => [
                                     'name' => 'name',
@@ -686,6 +706,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'OBJECT',
                             'name' => '__Directive',
+                            'isOneOf' => null,
                             'fields' => [
                                 [
                                     'name' => 'name',
@@ -783,6 +804,7 @@ final class IntrospectionTest extends TestCase
                         [
                             'kind' => 'ENUM',
                             'name' => '__DirectiveLocation',
+                            'isOneOf' => null,
                             'fields' => null,
                             'inputFields' => null,
                             'interfaces' => null,
@@ -962,6 +984,14 @@ final class IntrospectionTest extends TestCase
                                 3 => 'INPUT_FIELD_DEFINITION',
                             ],
                         ],
+                        [
+                            'name' => 'oneOf',
+                            'args' => [],
+                            'isRepeatable' => false,
+                            'locations' => [
+                                0 => 'INPUT_OBJECT',
+                            ],
+                        ],
                     ],
                 ],
             ],
@@ -995,7 +1025,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestInputObject") {
@@ -1081,7 +1113,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestType") {
@@ -1115,7 +1149,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestType") {
@@ -1167,7 +1203,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
       {
         __type(name: "TestType") {
@@ -1227,7 +1265,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestType") {
@@ -1284,7 +1324,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestType") {
@@ -1334,7 +1376,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestEnum") {
@@ -1394,7 +1438,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestEnum") {
@@ -1460,7 +1506,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestInputObject") {
@@ -1515,7 +1563,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestInputObject") {
@@ -1561,7 +1611,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
       {
         __type {
@@ -1588,7 +1640,9 @@ final class IntrospectionTest extends TestCase
             'fields' => ['a' => Type::string()],
         ]);
 
-        $schema = new Schema(['query' => $QueryRoot]);
+        $schema = new Schema([
+            'query' => $QueryRoot,
+        ]);
         $request = '
       {
         schemaType: __type(name: "__Schema") {
@@ -1645,7 +1699,9 @@ final class IntrospectionTest extends TestCase
             'fields' => ['a' => Type::string()],
         ]);
 
-        $schema = new Schema(['query' => $QueryRoot]);
+        $schema = new Schema([
+            'query' => $QueryRoot,
+        ]);
         $request = '
       {
         typeKindType: __type(name: "__TypeKind") {
@@ -1714,7 +1770,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $QueryRoot]);
+        $schema = new Schema([
+            'query' => $QueryRoot,
+        ]);
         $source = Introspection::getIntrospectionQuery(['directiveIsRepeatable' => true]);
 
         $calledForFields = [];
@@ -1748,7 +1806,9 @@ final class IntrospectionTest extends TestCase
             ],
         ]);
 
-        $schema = new Schema(['query' => $TestType]);
+        $schema = new Schema([
+            'query' => $TestType,
+        ]);
         $request = '
           {
             __type(name: "TestType") {
@@ -1781,5 +1841,31 @@ final class IntrospectionTest extends TestCase
     {
         yield [fn (): bool => false];
         yield [false];
+    }
+
+    public function testIsOneOf(): void
+    {
+        $input = new InputObjectType([
+            'name' => 'SearchInput',
+            'isOneOf' => true,
+            'fields' => [
+                'name' => ['type' => Type::string()],
+                'email' => ['type' => Type::string()],
+            ],
+        ]);
+
+        $query = new ObjectType([
+            'name' => 'QueryRoot',
+            'fields' => [
+                'input' => ['type' => $input],
+            ],
+        ]);
+
+        $schema = new Schema([
+            'query' => $query,
+        ]);
+
+        $introspection = Introspection::fromSchema($schema);
+        self::assertTrue($introspection['__schema']['types'][1]['isOneOf']);
     }
 }
