@@ -9,11 +9,81 @@ You can find and compare releases at the [GitHub release page](https://github.co
 
 ## Unreleased
 
+## v15.25.1
+
+### Changed
+
+- Call `AbstractType::resolveValue` before `AbstractType::resolveType` https://github.com/webonyx/graphql-php/pull/1781
+
+## v15.25.0
+
+### Added
+
+- Introduce `resolveValue` method to Interface and Union types https://github.com/webonyx/graphql-php/pull/1776
+
+## v15.24.0
+
+### Added
+
+- Allow passing `NonNull` to `Type::nonNull()` https://github.com/webonyx/graphql-php/pull/1757
+
+## v15.23.1
+
+### Changed
+
+- Improve `Type::getNamedType()` return type https://github.com/webonyx/graphql-php/pull/1756
+
+## v15.23.0
+
+### Added
+
+- Allow replacing a `Node` with a `NodeList` in `Visitor` https://github.com/webonyx/graphql-php/pull/1754
+
+## v15.22.4
+
+### Fixed
+
+- Fix `NodeVisitor` return type by allowing `Node` https://github.com/webonyx/graphql-php/pull/1752
+
+## v15.22.3
+
+### Changed
+
+- Make class `Printer` fully static https://github.com/webonyx/graphql-php/pull/1749
+
+## v15.22.2
+
+### Fixed
+
+- Do not escape forward slashes in `Printer::doPrint` https://github.com/webonyx/graphql-php/pull/1748
+
+## v15.22.1
+
+### Fixed
+
+- Keep `isOneOf` directive when extending input objects with `SchemaExtender` https://github.com/webonyx/graphql-php/pull/1745
+
+## v15.22.0
+
+### Added
+
+- Add argument `includeDeprecated` to introspection field `__Directive.args` https://github.com/webonyx/graphql-php/pull/1738/commits/0dd03675dc7c971abfad86cafaf2da353778529f
+
+### Changed
+
+- Make all `includeDeprecated` arguments in introspection fields non-nullable with default value `false` https://github.com/webonyx/graphql-php/pull/1738/commits/851ddb55d722035904191705b6d62ba56950680c
+
+## v15.21.3
+
+### Fixed
+
+- Make querying `isOneOf` optional in introspection query https://github.com/webonyx/graphql-php/pull/1737
+
 ## v15.21.2
 
 ### Fixed
 
-- Add missing `isOneOf` to Introspection query https://github.com/webonyx/graphql-php/pull/1729
+- Add missing `isOneOf` to introspection query https://github.com/webonyx/graphql-php/pull/1729
 
 ## v15.21.1
 

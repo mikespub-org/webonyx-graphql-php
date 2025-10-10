@@ -246,7 +246,7 @@ static function listOf($type): GraphQL\Type\Definition\ListOfType
 /**
  * Wraps the given type in a non-null type.
  *
- * @param (NullableType&Type)|callable():(NullableType&Type) $type
+ * @param NonNull|(NullableType&Type)|callable():(NullableType&Type) $type
  *
  * @api
  */
@@ -269,6 +269,8 @@ static function isInputType($type): bool
  * Returns the underlying named type of the given type.
  *
  * @return (Type&NamedType)|null
+ *
+ * @phpstan-return ($type is null ? null : Type&NamedType)
  *
  * @api
  */
@@ -1260,6 +1262,8 @@ $printed = GraphQL\Language\Printer::doPrint($ast);
  *
  * Handles both executable definitions and schema definitions.
  *
+ * @throws \JsonException
+ *
  * @api
  */
 static function doPrint(GraphQL\Language\AST\Node $ast): string
@@ -1325,10 +1329,10 @@ visitor API:
 3. Generic visitors that trigger upon entering and leaving any node.
 
    Visitor::visit($ast, [
-      'enter' => function ($node) {
+   'enter' => function (Node $node) {
    // enter any node
    },
-   'leave' => function ($node) {
+   'leave' => function (Node $node) {
    // leave any node
    }
    ]);
@@ -1348,7 +1352,7 @@ visitor API:
    ]
    ]);
 
-@phpstan-type NodeVisitor callable(Node): (VisitorOperation|null|false|void)
+@phpstan-type NodeVisitor callable(Node): (VisitorOperation|Node|NodeList<Node>|null|false|void)
 @phpstan-type VisitorArray array<string, NodeVisitor>|array<string, array<string, NodeVisitor>>
 
 @see \GraphQL\Tests\Language\VisitorTest
