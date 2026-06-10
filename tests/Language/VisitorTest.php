@@ -215,7 +215,7 @@ final class VisitorTest extends ValidatorTestCase
 
         $expected = $ast->cloneDeep();
         $operationNode = $expected->definitions[0];
-        assert($operationNode instanceof OperationDefinitionNode);
+        self::assertInstanceOf(OperationDefinitionNode::class, $operationNode);
         $operationNode->directives = new NodeList([$directive1, $directive2]);
 
         self::assertEquals($expected, $editedAst);
@@ -531,6 +531,40 @@ final class VisitorTest extends ValidatorTestCase
         ];
 
         self::assertEquals($expected, $visited);
+    }
+
+    public function testAllowsEnterAndLeaveVisitorMaps(): void
+    {
+        $visited = [];
+        $ast = Parser::parse('{ a, b }', ['noLocation' => true]);
+
+        Visitor::visit(
+            $ast,
+            [
+                'enter' => [
+                    NodeKind::NAME => function (NameNode $node) use (&$visited, $ast): void {
+                        $this->checkVisitorFnArgs($ast, func_get_args());
+                        $visited[] = ['enter', $node->value];
+                    },
+                ],
+                'leave' => [
+                    NodeKind::NAME => function (NameNode $node) use (&$visited, $ast): void {
+                        $this->checkVisitorFnArgs($ast, func_get_args());
+                        $visited[] = ['leave', $node->value];
+                    },
+                ],
+            ]
+        );
+
+        self::assertSame(
+            [
+                ['enter', 'a'],
+                ['leave', 'a'],
+                ['enter', 'b'],
+                ['leave', 'b'],
+            ],
+            $visited
+        );
     }
 
     public function testExperimentalVisitsVariablesDefinedInFragments(): void

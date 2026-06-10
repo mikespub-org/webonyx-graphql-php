@@ -42,7 +42,9 @@ use GraphQL\Utils\BuildSchema;
 use GraphQL\Utils\SchemaPrinter;
 use GraphQL\Validator\Rules\KnownDirectives;
 
-/** @phpstan-import-type UnnamedFieldDefinitionConfig from FieldDefinition */
+/**
+ * @phpstan-import-type UnnamedFieldDefinitionConfig from FieldDefinition
+ */
 final class BuildSchemaTest extends TestCaseBase
 {
     use ArraySubsetAsserts;
@@ -221,13 +223,12 @@ final class BuildSchemaTest extends TestCaseBase
     /** @see it('Supports descriptions') */
     public function testSupportsDescriptions(): void
     {
-        /* TODO add schema description - see https://github.com/webonyx/graphql-php/issues/1027
-            """Do you agree that this is the most creative schema ever?"""
+        $sdl = <<<GRAPHQL
+            "Do you agree that this is the most creative schema ever?"
             schema {
               query: Query
             }
-        */
-        $sdl = <<<GRAPHQL
+            
             "This is a directive"
             directive @foo(
               "It has an argument"
@@ -861,7 +862,7 @@ final class BuildSchemaTest extends TestCaseBase
         ");
 
         $someScalar = $schema->getType('SomeScalar');
-        assert($someScalar instanceof ScalarType);
+        self::assertInstanceOf(ScalarType::class, $someScalar);
 
         $expectedSomeScalarSDL = <<<'GRAPHQL'
             scalar SomeScalar
@@ -897,7 +898,7 @@ final class BuildSchemaTest extends TestCaseBase
         ");
 
         $someObject = $schema->getType('SomeObject');
-        assert($someObject instanceof ObjectType);
+        self::assertInstanceOf(ObjectType::class, $someObject);
 
         $expectedSomeObjectSDL = <<<'GRAPHQL'
             type SomeObject implements Foo & Bar & Baz {
@@ -932,7 +933,7 @@ final class BuildSchemaTest extends TestCaseBase
         $schema = BuildSchema::build($interfaceSDL);
 
         $someInterface = $schema->getType('SomeInterface');
-        assert($someInterface instanceof InterfaceType);
+        self::assertInstanceOf(InterfaceType::class, $someInterface);
 
         $expectedSomeInterfaceSDL = <<<'GRAPHQL'
             interface SomeInterface {
@@ -966,7 +967,7 @@ final class BuildSchemaTest extends TestCaseBase
         ");
 
         $someUnion = $schema->getType('SomeUnion');
-        assert($someUnion instanceof UnionType);
+        self::assertInstanceOf(UnionType::class, $someUnion);
 
         $expectedSomeUnionSDL = <<<'GRAPHQL'
             union SomeUnion = FirstType | SecondType | ThirdType
@@ -997,7 +998,7 @@ final class BuildSchemaTest extends TestCaseBase
         $schema = BuildSchema::build($enumSDL);
 
         $someEnum = $schema->getType('SomeEnum');
-        assert($someEnum instanceof EnumType);
+        self::assertInstanceOf(EnumType::class, $someEnum);
 
         $expectedSomeEnumSDL = <<<'GRAPHQL'
             enum SomeEnum {
@@ -1032,7 +1033,7 @@ final class BuildSchemaTest extends TestCaseBase
         $schema = BuildSchema::build($inputSDL);
 
         $someInput = $schema->getType('SomeInput');
-        assert($someInput instanceof InputObjectType);
+        self::assertInstanceOf(InputObjectType::class, $someInput);
 
         $expectedSomeInputSDL = <<<'GRAPHQL'
             input SomeInput {
@@ -1063,7 +1064,7 @@ final class BuildSchemaTest extends TestCaseBase
         $schema = BuildSchema::build($inputSDL);
 
         $someInput = $schema->getType('SomeInput');
-        assert($someInput instanceof InputObjectType);
+        self::assertInstanceOf(InputObjectType::class, $someInput);
 
         // Verify that the @oneOf directive from the extension is properly applied
         self::assertTrue($someInput->isOneOf());

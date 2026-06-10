@@ -5,6 +5,7 @@ namespace GraphQL\Tests\Validator;
 use GraphQL\Error\Error;
 use GraphQL\Language\AST\NodeKind;
 use GraphQL\Language\Parser;
+use GraphQL\Type\Introspection;
 use GraphQL\Validator\DocumentValidator;
 use GraphQL\Validator\Rules\CustomValidationRule;
 use GraphQL\Validator\Rules\QueryComplexity;
@@ -57,6 +58,19 @@ final class QueryComplexityTest extends QuerySecurityTestCase
         $query = 'query MyQuery { human { ...F1 } } fragment F1 on Human { firstName}';
 
         $this->assertDocumentValidators($query, 2, 3);
+    }
+
+    /** @dataProvider fragmentQueriesOnRootProvider */
+    public function testFragmentQueriesOnRoot(string $query): void
+    {
+        $this->assertDocumentValidators($query, 12, 13);
+    }
+
+    /** @return iterable<array<string>> */
+    public function fragmentQueriesOnRootProvider(): iterable
+    {
+        yield ['fragment humanFragment on QueryRoot { human { dogs { name } } } query { ...humanFragment }'];
+        yield ['query { ...humanFragment } fragment humanFragment on QueryRoot { human { dogs { name } } }'];
     }
 
     public function testAliasesQueries(): void
@@ -164,7 +178,16 @@ final class QueryComplexityTest extends QuerySecurityTestCase
 
     public function testComplexityIntrospectionQuery(): void
     {
-        $this->assertIntrospectionQuery(187);
+        $query = Introspection::getIntrospectionQuery();
+
+        $this->assertDocumentValidator($query, 0);
+    }
+
+    public function testMixedIntrospectionAndRegularFields(): void
+    {
+        $query = 'query MyQuery { __schema { queryType { name } } human { firstName } }';
+
+        $this->assertDocumentValidators($query, 2, 3);
     }
 
     public function testIntrospectionTypeMetaFieldQuery(): void
@@ -201,6 +224,34 @@ final class QueryComplexityTest extends QuerySecurityTestCase
 
         self::assertCount(1, $errors);
         self::assertSame($reportedError, $errors[0]);
+    }
+
+    public function testMultipleOperations(): void
+    {
+        $query = <<<GRAPHQL
+        query A { # complexity 2
+          human { firstName }
+        }
+        query B { # complexity 12
+          human { dogs { name } }
+        }
+        query C { # complexity 13
+          human { firstName dogs { name } }
+        }
+        GRAPHQL;
+
+        $schema = QuerySecuritySchema::buildSchema();
+        $ast = Parser::parse($query);
+
+        // When no operation exceeds the limit, `getQueryComplexity` returns complexity of
+        // the last operation.
+        DocumentValidator::validate($schema, $ast, [$this->getRule(100)]);
+        self::assertSame(13, self::$rule->getQueryComplexity());
+
+        // When any operation exceeds the limit, `getQueryComplexity` returns the complexity
+        // of the first operation exceeding the limit.
+        DocumentValidator::validate($schema, $ast, [$this->getRule(2)]);
+        self::assertSame(12, self::$rule->getQueryComplexity());
     }
 
     protected static function getErrorMessage(int $max, int $count): string
