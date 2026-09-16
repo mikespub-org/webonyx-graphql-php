@@ -1223,7 +1223,7 @@ final class ExecutorTest extends TestCase
                     ],
                     'arrayAccess' => [
                         'type' => $ArrayAccess,
-                        'resolve' => static fn (): \ArrayAccess => new class() implements \ArrayAccess {
+                        'resolve' => static fn (): \ArrayAccess => new class implements \ArrayAccess {
                             /** @param mixed $offset */
                             #[\ReturnTypeWillChange]
                             public function offsetExists($offset): bool
@@ -1271,7 +1271,7 @@ final class ExecutorTest extends TestCase
                     ],
                     'objectField' => [
                         'type' => $ObjectField,
-                        'resolve' => static fn (): \stdClass => new class() extends \stdClass {
+                        'resolve' => static fn (): \stdClass => new class extends \stdClass {
                             public ?int $set = 1;
 
                             public ?int $unset;
@@ -1279,7 +1279,7 @@ final class ExecutorTest extends TestCase
                     ],
                     'objectVirtual' => [
                         'type' => $ObjectVirtual,
-                        'resolve' => static fn (): object => new class() {
+                        'resolve' => static fn (): object => new class {
                             public function __isset(string $name): bool
                             {
                                 switch ($name) {
@@ -1356,6 +1356,77 @@ final class ExecutorTest extends TestCase
                         'set' => 1,
                         'unsetNull' => null,
                         'unsetThrow' => null,
+                    ],
+                ],
+            ],
+            $result->toArray()
+        );
+    }
+
+    public function testDefaultResolverDoesNotAccessPropertiesOfArrayAccess(): void
+    {
+        $schema = new Schema([
+            'query' => new ObjectType([
+                'name' => 'Query',
+                'fields' => [
+                    'arrayAccess' => [
+                        'type' => new ObjectType([
+                            'name' => 'ArrayAccess',
+                            'fields' => [
+                                'property' => Type::int(),
+                            ],
+                        ]),
+                        // Eloquent models implement \ArrayAccess to expose their attributes.
+                        // Their properties hold internal state that must stay hidden.
+                        // https://github.com/webonyx/graphql-php/pull/1531
+                        'resolve' => static fn (): \ArrayAccess => new class implements \ArrayAccess {
+                            public ?int $property = 1;
+
+                            /** @param mixed $offset */
+                            #[\ReturnTypeWillChange]
+                            public function offsetExists($offset): bool
+                            {
+                                return false;
+                            }
+
+                            /** @param mixed $offset */
+                            #[\ReturnTypeWillChange]
+                            public function offsetGet($offset): ?int
+                            {
+                                return null;
+                            }
+
+                            /**
+                             * @param mixed $offset
+                             * @param mixed $value
+                             */
+                            #[\ReturnTypeWillChange]
+                            public function offsetSet($offset, $value): void {}
+
+                            /** @param mixed $offset */
+                            #[\ReturnTypeWillChange]
+                            public function offsetUnset($offset): void {}
+                        },
+                    ],
+                ],
+            ]),
+        ]);
+
+        $query = Parser::parse('
+            {
+                arrayAccess {
+                    property
+                }
+            }
+        ');
+
+        $result = Executor::execute($schema, $query);
+
+        self::assertSame(
+            [
+                'data' => [
+                    'arrayAccess' => [
+                        'property' => null,
                     ],
                 ],
             ],
